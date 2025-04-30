@@ -1,0 +1,50 @@
+name: CI with Verilator
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  CI_run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Verilator
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y verilator g++ make
+        sudo apt-get install help2man perl python3
+        sudo apt-get install libfl2
+        sudo apt-get install libfl-dev
+        sudo apt-get install zlib1g zlib1g-dev
+        sudo apt-get install ccache
+        sudo apt-get install mold
+        sudo apt-get install libgoogle-perftools-dev numactl
+        sudo apt-get install perl-doc
+        sudo apt-get install git autoconf flex bison
+        
+    #- name: Lint all files
+    #  run:  verilator --lint-only FILES.sv --timing -Wno-MULTITOP
+        
+    #- name: Adder test
+    #  run: |
+    #    verilator --binary device.sv adder_tb.sv --top-module adder_tb --trace --timing 
+    #    ./obj_dir/Vadder_tb 
+
+    # - name: Multiply test
+    #   run: |
+    #     verilator --binary device.sv multiplier_tb.sv --top-module multiplier_tb --trace --timing
+    #     ./obj_dir/Vmultiplier_tb 
+    #
+    #- name: Upload simulation logs as artifact
+    #  uses: actions/upload-artifact@v2
+    #  with:
+    #    name: simulation-logs
+    #    path: ./obj_dir/vltable.log  # This is where Verilator logs are generated
