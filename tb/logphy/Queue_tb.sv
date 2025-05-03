@@ -1,18 +1,16 @@
-`timescale 1ns/1ps
+//`timescale 1ns/1ps
+//`include "../../src/logphy/Queue.sv"
 
 module Queue_tb;
-
-  // Signals
-  reg          clk; patata
+  reg          clk;
   reg          reset;
   reg          enq_valid_i;
   reg  [127:0] data_i;
   reg          deq_rdy_i;
   wire         enq_rdy_o;
-  wire         deq_valid_o;
+  wire         deq_valid_o; 
   wire [127:0] data_o;
 
-  // DUT instantiation
   Queue dut (
     .clk(clk),
     .reset(reset),
@@ -27,26 +25,30 @@ module Queue_tb;
   // Clock generation
   initial begin
     clk = 0;
-    forever clk = ~clk;
+    forever #5 clk = ~clk; // Toggle clock every 5 time units
   end
+
+  initial begin
+    $dumpfile("../Queue_tb.vcd"); // Specify the name of the VCD file
+    $dumpvars(0, Queue_tb);    // Dump all variables in the Queue_tb module
+    end
 
   // Testbench logic
   initial begin
-    // Initialize signals
     reset = 1;
     enq_valid_i = 0;
     data_i = 0;
     deq_rdy_i = 0;
 
     // Apply reset
-    #(2 * CLK_PERIOD);
-    reset = 0;
+    #10 reset = 0;
 
     // Test enqueue operation
     $display("Starting enqueue test...");
     enq_valid_i = 1;
     data_i = 128'hAABBCCDDEEFF00112233445566778899;
-    @(posedge clk);
+    
+    #20;
     enq_valid_i = 0;
 
     // Wait for enqueue to complete
@@ -77,5 +79,6 @@ module Queue_tb;
     $monitor("Time: %0t | enq_rdy_o: %b | enq_valid_i: %b | data_i: %h | deq_rdy_i: %b | deq_valid_o: %b | data_o: %h",
              $time, enq_rdy_o, enq_valid_i, data_i, deq_rdy_i, deq_valid_o, data_o);
   end
+
 
 endmodule
