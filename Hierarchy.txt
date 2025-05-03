@@ -42,25 +42,22 @@ tb/
 ├── util/
 
 ## Component Instantiation Hierarchy
-1. **UCITop**
-   - **ProtocolLayer**
-   - **D2DAdapter**
-     - **D2DMainbandModule**
-       - **ParityGenerator**
-     - **D2DSidebandModule**
-       - **SidebandNode**
-         - **SidebandSerializer**
-         - **SidebandDeserializer**
-         - **SidebandPriorityQueue**
-         - **SidebandSwitcher**
-       - **LinkManagementController**
-       - **StallHandler**
-   - **LogicalPhy**
-     - **Lanes**
-       - **AsyncQueue**
-       - **DataWidthCoupler**
-       - **RdiDataMapper**
-       - **PatternGenerator**
-       - **MBInitFSM**
-       - **RdiBringup**
-       - **LinkTrainingFSM**
+UCITop
+    ProtocolLayer
+    D2DAdapter
+    LogicalPhy
+        LinkTrainingFSM
+        RdiDataMapper
+        Lanes
+        PHYSidebandChannel
+            SidebandLinkNode
+            sidebandSwitcher_1
+            SidebandNode
+                SidebandSerializer
+                SidebandPriorityQueue
+                    Queue
+                    Queue_1
+                    SidebandEnqArbiter
+                    SidebandDeqArbiter
+                ✅SidebandDeserializer 
+
