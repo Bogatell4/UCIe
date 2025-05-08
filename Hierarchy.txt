@@ -49,14 +49,23 @@ UCITop
         LinkTrainingFSM
         RdiDataMapper
         Lanes
+            AsyncQueue
+                AsyncQueueSource
+                    ✅D  AsyncValidSync
+                        ✅D AsyncResetSynchronizerShiftReg_w1_d3_i0
+                            ✅AsyncResetSynchronizerPrimitiveShiftReg_d3_i0
+                    ✅D AsyncResetSynchronizerShiftReg_w4_d3_i0
+                        ✅(x4): AsyncResetSynchronizerPrimitiveShiftReg_d3_i0
+                AsyncQueueSink
+            AsyncQueue_1
         PHYSidebandChannel
             SidebandLinkNode
             sidebandSwitcher_1
             SidebandNode
                 SidebandSerializer
                 SidebandPriorityQueue
-                    Queue
-                    Queue_1
+                    ✅Queue + tb
+                    Queue_1 (same as Queue but different size)
                     SidebandEnqArbiter
                     SidebandDeqArbiter
                 ✅SidebandDeserializer 
