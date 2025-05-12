@@ -89,10 +89,9 @@ assign valid_o = | valid_o_shift_reg_w;
 always_ff @(posedge periph_clkPins_i[1] or reset) begin
     if (reset) begin
         enable_shift_reg_r <= 1'b0;
-    end else if (enable_ack_shift_reg_w) begin //recieved ack from shift reg, reset enable to 0
-        enable_shift_reg_r <= 1'b0;
-    end else if (ctr_odd == 2'b11 && !valid_iPin && flit_fragment_index == 2'd3) begin
-        enable_shift_reg_r <= 1'b1;
+    end else begin
+        if (read_index != async_write_index) enable_shift_reg_r <= 1'b1;
+        else if (enable_ack_shift_reg_w) enable_shift_reg_r <= 1'b0;
     end
 end
 
@@ -100,8 +99,8 @@ always_ff @(posedge clk or reset) begin
     if (reset) begin
         read_index <= 0;
     end else begin
-        if (enable_ack_shift_reg_w) begin
-            read_index <= read_index + 1;
+        if (read_index != async_write_index) begin
+            if(enable_shift_reg_r)read_index <= read_index + 1;
         end
     end
 end
