@@ -30,13 +30,16 @@ jobs:
         sudo apt-get install perl-doc
         sudo apt-get install git autoconf flex bison
         
-    #- name: Lint all files
-    #  run:  verilator --lint-only FILES.sv --timing -Wno-MULTITOP
+    - name: Generate filelist
+      run: find . -name "*.sv" > All_SV_filesList.f
+
+    - name: Lint all files
+      run: verilator --lint-only -f All_SV_filesList.f --timing -Wno-MULTITOP -I/src/logphy -I/tb/logphy
         
-    #- name: Adder test
-    #  run: |
-    #    verilator --binary device.sv adder_tb.sv --top-module adder_tb --trace --timing 
-    #    ./obj_dir/Vadder_tb 
+    - name: MB_RX test
+      run: |
+        verilator --binary MB_RX.sv MB_RX_tb.sv --top-module MB_RX_tb.sv --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ps/1ps -I/src/logphy
+        ./obj_dir/Vadder_tb 
 
     # - name: Multiply test
     #   run: |
