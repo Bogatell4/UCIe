@@ -31,15 +31,17 @@ jobs:
         sudo apt-get install git autoconf flex bison
         
     - name: Generate filelist
-      run: find . -name "*.sv" > All_SV_filesList.f
+      run: |
+        find . -name "*.sv" > All_SV_filesList.f
+        cat ALL_SV_filesList.f
 
     - name: Lint all files
       run: verilator --lint-only -f All_SV_filesList.f --timing -Wno-MULTITOP -I/src/logphy -I/tb/logphy
         
     - name: MB_RX test
       run: |
-        verilator --binary MB_RX.sv MB_RX_tb.sv --top-module MB_RX_tb.sv --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ps/1ps -I/src/logphy
-        ./obj_dir/Vadder_tb 
+        verilator -I/tb/logphy -I/src/logphy --binary -f ALL_SV_filesList.f --top-module MB_RX_tb.sv --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ps/1ps 
+        ./obj_dir/VMB_RX_tb
 
     # - name: Multiply test
     #   run: |
