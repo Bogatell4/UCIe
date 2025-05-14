@@ -1,0 +1,13 @@
+
+
+Nomenclature for sv variables:
+terminations: 
+_i for inputs, 
+_o for outputs,
+_r to identify internal registers for other signals (no ned for big memory blocks)
+_w for internal wires needed in Logical
+
+Matrix dimensioning order:
+Define the convention for defining matrixes from the highest level of abstraction to the lowest. Example:
+For a 8 bit 16 element block it will be defined like this: [7:0] matrix [15:0]
+if i want to have like 128 blocks of this type of matrix it would be declared like this: [7:0] matrix [127:0] [15:0]
