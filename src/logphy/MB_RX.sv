@@ -1,7 +1,5 @@
 // Used for UCIe standard package 16 line data bit on MainBand
-//TODO: parametrize to accept more data pins
 //TODO: ADD Track line? not sure functionality
-//TODO: ADD error in case of data_i overflow
 
 module MB_RX #(
     parameter flit_buffer_size = 2 // Number of flit buffers, cant be 1 and needs to ba a power of 2

@@ -1,5 +1,5 @@
 // Used for UCIe standard package 16 line data bit on MainBand
-//TODO: parametrize to accept more data pins
+//TODO: ADD Track line? not sure functionality
 
 module MB_TX #(
     parameter flit_buffer_size = 2 // Number of flit buffers, must be a power of 2 and not 1
@@ -8,6 +8,7 @@ module MB_TX #(
     input clk_100MHz, // Slow clk (100MHz)
     input reset,
     input valid_i,
+    output valid_ack_o,
 
     input [7:0] data_i [63:0], // Input data flit serialized (64 bytes)
 
@@ -19,7 +20,6 @@ module MB_TX #(
     output transmiting_o
 );
 
-    reg valid_r;
     reg [7:0] flit_buffer_r [flit_buffer_size-1:0][63:0];
     reg [$clog2(flit_buffer_size)-1:0] write_index;
     reg [$clog2(flit_buffer_size)-1:0] read_index;
@@ -31,12 +31,14 @@ module MB_TX #(
     reg [1:0] flit_fragment_index;
     wire [7:0] data_in_sync_w[63:0];
     wire valid_sync_w;
+    logic validPin_w;
 
-    assign ctr_sum = ctr_even + ctr_odd;
+    
+    assign ctr_sum = (ctr_even == 2'b11 && ctr_odd == 2'b00) ? 3'd7 : (ctr_even + ctr_odd);
     assign periph_clkPins_o = periph_clk_i;
-    assign valid_pin_o = valid_r;
+    assign valid_pin_o = validPin_w;
     assign transmiting_o = transmiting_r;
-    assign transmiting_w = transmiting_r;
+    assign transmiting_w = transmiting_r | (write_index != read_index);
 
     // Generate 64 ShiftReg_3d instances to syncronize the data input from slow 100MHz to fast 2GHz clk domains
     genvar k;
@@ -48,9 +50,7 @@ module MB_TX #(
                 .clk(clk),
                 .reset(reset),
                 .enable(valid_i),
-                //verilator lint_off PINCONNECTEMPTY
-                .enable_ack(),     // unnused
-                //verilator lint_on PINCONNECTEMPTY
+                .enable_ack(valid_ack_o),
                 .valid_o(valid_sync_w),
                 .d_i(data_i[k]),
                 .q_o(data_in_sync_w[k])
@@ -58,7 +58,7 @@ module MB_TX #(
         end
     endgenerate
 
-    always_ff @(posedge clk_100MHz or posedge reset) begin
+    always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             write_index <= 0;
             //reset all the flit buffers
@@ -76,49 +76,41 @@ module MB_TX #(
     end
 
 
-
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) transmiting_r <= 1'b0;
+        else if (flit_fragment_index == 2'b11 && ctr_even == 2'b11) transmiting_r <= 1'b0;
+        else if (transmiting_w) transmiting_r <= 1'b1;
+    end
 
     always_ff @(posedge clk or posedge reset) begin
         if(reset) begin
             ctr_even <= 2'b00;  
-            valid_r <= 1'b0;
             flit_fragment_index <= 2'b00;
-            transmiting_r <= 1'b0;
             read_index <= 0;
         end
-        else if (valid_sync_w) transmiting_r <= 1'b1;
-        if(transmiting_w) begin
-            case(ctr_even)
-                2'b00: begin
-                    valid_r <= 1'b1;
-                    ctr_even <= ctr_even + 1;
+        else if(transmiting_r) begin
+            ctr_even <= ctr_even + 1;
+            if (ctr_even == 2'b11) begin
+                if(flit_fragment_index == 2'b11) begin
+                    read_index <= read_index + 1;
+                    flit_fragment_index <= 2'b00;
+                end else begin
+                    flit_fragment_index <= flit_fragment_index + 1;
                 end
-                2'b01: begin
-                    valid_r <= 1'b1;
-                    ctr_even <= ctr_even + 1;
-                end
-                2'b10: begin
-                    valid_r <= 1'b0;
-                    ctr_even <= ctr_even + 1;
-                end
-                2'b11: begin
-                    valid_r <= 1'b0;
-                    ctr_even <= ctr_even + 1;
-                    if (flit_fragment_index == 2'b11) begin
-                        transmiting_r <= 1'b0;
-                        read_index <= read_index + 1;
-                        flit_fragment_index <= 2'b00;
-                    end else begin
-                        flit_fragment_index <= flit_fragment_index + 1;
-                    end
-                end
-            endcase
+            end
         end
     end
 
     always_ff @(negedge clk or posedge reset) begin
         if(reset) ctr_odd <= 2'b00;
-        else if(transmiting_w) ctr_odd <= ctr_odd + 1;
+        else if (transmiting_r == 1'b0) ctr_odd <= 2'b00;
+        else
+            case(ctr_even)
+                2'b00: ctr_odd <= 2'b01;
+                2'b01: ctr_odd <= 2'b10;
+                2'b10: ctr_odd <= 2'b11;
+                2'b11: ctr_odd <= 2'b00;
+            endcase
     end
 
 
@@ -139,5 +131,12 @@ module MB_TX #(
                         flit_buffer_r[read_index][flit_fragment_index*16 + 2][ctr_sum], 
                         flit_buffer_r[read_index][flit_fragment_index*16 + 1][ctr_sum], 
                         flit_buffer_r[read_index][flit_fragment_index*16 + 0][ctr_sum]};
+
+    always_comb begin
+        if (transmiting_r && (ctr_even == 2'b00 || ctr_even == 2'b01))
+            validPin_w = 1'b1;
+        else
+            validPin_w = 1'b0;
+    end
 
 endmodule
