@@ -55,7 +55,7 @@ module MB_tb;
 
     initial begin
         $dumpfile("../MB_tb.vcd");
-        $dumpvars(0, MB_RX_tb);
+        $dumpvars(0, MB_tb);
     end
 
     // Clock generation

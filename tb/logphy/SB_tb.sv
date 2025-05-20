@@ -58,12 +58,17 @@ module SB_tb;
         .valid_o(valid_o)
     );
 
+    initial begin
+        $dumpfile("../SB_tb.vcd");
+        $dumpvars(0, SB_tb);
+    end
+
     // Clock generation
     always #0.625 clk_800MHz <= ~clk_800MHz; // 800MHz -> 1.25ns period
     always #5    clk_100MHz <= ~clk_100MHz;  // 100MHz -> 10ns period
 
     // Test variables
-    string test_strs [2:0] = '{"ABCDEFGH", "12345678", "testDATA"};
+    string test_strs [0:2] = '{"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "12345678", "testDATA"};
     reg [63:0] test_data [2:0];
     reg [63:0] rx_data;
 
@@ -77,11 +82,13 @@ module SB_tb;
             valid_i <= 0;
             send_index <= 0;
         end else begin
-            data_i <= test_data[send_index];
-            valid_i <= 1;
-            wait (data_valid_ack_o == 1);
-            send_index <= send_index + 1;
-            valid_i <= 0;
+                if(send_index < 3) begin
+                data_i <= test_data[send_index];
+                valid_i <= 1;
+                wait (data_valid_ack_o == 1);
+                send_index <= send_index + 1;
+                valid_i <= 0;
+            end
         end
     end
 
@@ -129,12 +136,11 @@ module SB_tb;
         // Reset pulse
         #20;
         reset = 0;
-
-        // Wait a few cycles
-        #20;
         enable_tx = 1;
 
-        #200;
+        // Wait a few cycles
+
+        #600;
         $finish;
     end
 
