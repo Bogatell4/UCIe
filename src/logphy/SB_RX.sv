@@ -5,7 +5,8 @@ module SB_RX #(
     input clk_100MHz,
     input reset,
     input enable_i,   // Enable signal for the receiver
-    input msg_recieved_i, 
+    input msg_req_i, // Request to put out the FIFO a full message
+
 
     input dataPin_i,   // Serial data input
     input clkPin_i,    // Serial clock input from TX
@@ -91,17 +92,19 @@ module SB_RX #(
     end
 
     // Read from buffer on posedge clk_100MHz
-    always_ff @(posedge clk_100MHz or posedge reset or posedge msg_recieved_i) begin
+    always_ff @(posedge clk_100MHz or posedge reset) begin
         if (reset) begin
             read_index <= 0;
             data_o <= 64'd0;
+            valid_o <= 1'b0;
         end else if (enable_i) begin
-            if (read_index != write_index) begin
-                data_o <= buffer[read_index];
-                read_index <= read_index + 1;
-                valid_o <= 1'b1;
-            end else if (msg_recieved_i) valid_o <= 1'b0;
+            if (msg_req_i) begin
+                if (read_index != write_index) begin
+                    data_o <= buffer[read_index];
+                    read_index <= read_index + 1;
+                    valid_o <= 1'b1;
+                end
+            end else valid_o <= 1'b0;
         end
     end
-
 endmodule
