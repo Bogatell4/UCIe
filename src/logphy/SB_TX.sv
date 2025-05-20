@@ -1,13 +1,14 @@
 module SB_TX #(
     parameter buffer_size = 4 // Must be a power of 2 and >1
 )(
-    input clk, //800MHz
+    input clk_800MHz, //800MHz
     input reset,
 
     input  [63:0] data_i,
     input  valid_i,
     input  enable_i,
 
+    output data_valid_ack_o,
     output dataPin_o,
     output clkPin_o
 );
@@ -21,6 +22,8 @@ module SB_TX #(
     reg [5:0] ctr_64; // 6 bits to count up to 64 (0-63)
     reg clkPin_r;
     reg dataPin_r;
+    wire [63:0] data_w;
+    wire valid_w;
 
     assign dataPin_o = dataPin_r;
     assign clkPin_o = clkPin_r;
@@ -33,7 +36,20 @@ module SB_TX #(
 
     state_t state;
 
-    always_ff @(posedge clk or posedge reset) begin
+    ShiftReg_3d #(
+        .DATA_BIT_WIDTH(64)
+    ) shiftreg_inst (
+        .clk        (clk_800MHz),
+        .reset      (reset),
+        .enable     (valid_i),      
+        .enable_ack (data_valid_ack_o),              
+        .valid_o    (valid_w),              
+        .d_i        (data_i),        
+        .q_o        (data_w)               
+    );
+
+
+    always_ff @(posedge clk_800MHz or posedge reset) begin
         if (reset) begin
             integer i;
             write_index <= 0;
@@ -42,14 +58,14 @@ module SB_TX #(
             end
         end
         else begin
-            if (valid_i && enable_i) begin
-                buffer[write_index] <= data_i;
+            if (valid_w && enable_i) begin
+                buffer[write_index] <= data_w;
                 write_index <= write_index + 1;
             end
         end
     end
 
-    always_ff @(posedge clk or posedge reset) begin
+    always_ff @(posedge clk_800MHz or posedge reset) begin
         if (reset) begin
             read_index <= 0;
             ctr_32 <= 0;

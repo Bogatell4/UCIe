@@ -130,6 +130,8 @@ module MB_tb;
         reset = 1;
         #1000 reset = 0;
 
+
+        //this valid/enable signaling needs to be done with an asyncronous reset register with the ack
         for (int flitNum = 0; flitNum < 3; flitNum++) begin
             @(posedge clk_100MHz);
             valid_i = 1;
