@@ -68,20 +68,17 @@ module SB_tb;
     always #5    clk_100MHz <= ~clk_100MHz;  // 100MHz -> 10ns period
 
     // Test variables
-    string test_strs [0:2] = '{"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", "12345678", "testDATA"};
     reg [63:0] test_data [2:0];
-    reg [63:0] rx_data;
 
     integer send_index;
     integer recieve_index;
-    integer i;
 
     always @(posedge clk_100MHz or posedge reset)begin
         if (reset) begin
             data_i <= 64'd0;
             valid_i <= 0;
             send_index <= 0;
-        end else begin
+        end else if (enable_tx)begin
                 if(send_index < 3) begin
                 data_i <= test_data[send_index];
                 valid_i <= 1;
@@ -94,48 +91,43 @@ module SB_tb;
 
     always @(posedge clk_100MHz or posedge reset) begin
         if (reset) begin
-            rx_data <= 64'd0;
             recieve_index <= 0;
         end else begin
-            msg_req <= 1;
-            wait (valid_o == 1);
-            msg_req <= 0;
-            rx_data <= data_o;
-            // Compare received data with expected test data
-            if (data_o === test_data[recieve_index]) begin
-                $display("TEST PASSED: RX data matches TX data for string %0d: %s", recieve_index, test_strs[recieve_index]);
-            end else begin
-                $error("TEST FAILED: RX data (%h) does not match TX data (%h) for string %0d: %s", data_o, test_data[recieve_index], recieve_index, test_strs[recieve_index]);
-            end
-            recieve_index <= recieve_index + 1;
+            if (valid_o && msg_req) begin
+                // Compare received data with expected test data
+                if (data_o === test_data[recieve_index]) begin
+                    $display("[%0t] TEST PASSED: RX data matches TX data for index %0d: %h", $time, recieve_index, test_data[recieve_index]);
+                end else begin
+                    $error("[%0t] TEST FAILED: RX data (%h) does not match TX data (%h) for index %0d", $time, data_o, test_data[recieve_index], recieve_index);
+                end
+                msg_req <= 0;
+                recieve_index <= recieve_index + 1;
+            end else msg_req <= 1;
         end
     end
 
     initial begin
-        // Convert strings to 64-bit values
-        for (i = 0; i < 3; i = i + 1) begin
-            test_data[i] = { 
-                byte'(test_strs[i].getc(0)), 
-                byte'(test_strs[i].getc(1)), 
-                byte'(test_strs[i].getc(2)), 
-                byte'(test_strs[i].getc(3)), 
-                byte'(test_strs[i].getc(4)), 
-                byte'(test_strs[i].getc(5)), 
-                byte'(test_strs[i].getc(6)), 
-                byte'(test_strs[i].getc(7)) 
-            };
-        end
+        // Assign hex values directly
+        test_data[0] = 64'hFFBBCCDD11223344;
+        test_data[1] = 64'h1234567890ABCDEF;
+        test_data[2] = 64'hDEADBEEFCAFEBABE;
 
         // Initialize signals
         data_i = 64'd0;
         valid_i = 0;
         enable_tx = 0;
-        enable_rx = 1;
+        enable_rx = 0;
         msg_req = 0;
 
         // Reset pulse
-        #20;
+        #5;
         reset = 0;
+        enable_rx = 0;
+        enable_tx = 0;
+
+        #5;
+        enable_rx = 1;
+        #5
         enable_tx = 1;
 
         // Wait a few cycles

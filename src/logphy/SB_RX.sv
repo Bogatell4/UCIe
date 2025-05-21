@@ -1,18 +1,17 @@
 module SB_RX #(
     parameter buffer_size = 4 // Must be a power of 2 and >1
 )(
-    input clk_800MHz,         // System clock (not the serial clkPin) 800MHz
+    input clk_800MHz,
     input clk_100MHz,
     input reset,
     input enable_i,   // Enable signal for the receiver
-    input msg_req_i, // Request to put out the FIFO a full message
+    input msg_req_i,  // Request to put out the FIFO a full message
 
-
-    input dataPin_i,   // Serial data input
+    input dataPin_i,   // Serial data input from TX
     input clkPin_i,    // Serial clock input from TX
 
-    output reg [63:0] data_o, // Parallel deserialized output
-    output reg valid_o        // High for one clk cycle when a new word is ready
+    output reg [63:0] data_o, 
+    output reg valid_o        
 );
 
     reg [63:0] buffer [buffer_size-1:0];
@@ -28,6 +27,14 @@ module SB_RX #(
     wire [63:0] data_sync_w;
     wire valid_w;
 
+
+    typedef enum logic [0:0] {
+        RECIEVING      = 1'b1,
+        POST_RECIEVING = 1'b0
+    } state_t;
+
+    state_t state;
+
     // Shift register: capture data on negedge of clkPin_i out to syncro shift regs
     always_ff @(negedge clkPin_i or reset) begin
         if (reset) begin
@@ -35,23 +42,29 @@ module SB_RX #(
             postTran_cnt <= 5'd0;
             bit_cnt <= 6'd0;
             msg_flag <= 1'b0;
-        end else if(enable_i) begin
-            if (bit_cnt == 6'd63) begin
-                if (postTran_cnt == 5'd31)begin
-                    bit_cnt <= 6'd0;
+            state <= RECIEVING;
+        end else if (enable_i) begin
+            case (state)
+                RECIEVING: begin
+                    bit_cnt <= bit_cnt + 1;
                     postTran_cnt <= 5'd0;
+                    shift_reg <= {dataPin_i, shift_reg[63:1]};
                     msg_flag <= 1'b0;
-                end else begin
-                postTran_cnt <= postTran_cnt + 1;
-                msg_flag <= 1'b0;
+                    if (bit_cnt == 6'd63) begin
+                        msg_flag <= 1'b1;
+                        state <= POST_RECIEVING;
+                    end
                 end
-            end else begin
-                bit_cnt <= bit_cnt + 1;
-                postTran_cnt <= 5'd0;
-                shift_reg <= {shift_reg[62:0], dataPin_i};
-                if (bit_cnt == 6'd63) msg_flag <= 1'b1;
-                else msg_flag <= 1'b0;
-            end
+                POST_RECIEVING: begin
+                    bit_cnt <= 6'd0;
+                    postTran_cnt <= postTran_cnt + 1;
+                    if (msg_recieved_ack) msg_flag <= 1'b0;
+                    if (postTran_cnt == 5'd31) begin
+                        state <= RECIEVING;
+                        postTran_cnt <= 5'd0;
+                    end
+                end
+            endcase
         end
     end
 
@@ -78,7 +91,7 @@ module SB_RX #(
         end
     end
 
-    // Write to buffer on posedge clk_100MHz
+    // Write to buffer
     always_ff @(posedge clk_100MHz or posedge reset) begin
         if (reset) begin
             write_index <= 0;
@@ -91,7 +104,7 @@ module SB_RX #(
         end
     end
 
-    // Read from buffer on posedge clk_100MHz
+    // Read from buffer
     always_ff @(posedge clk_100MHz or reset) begin
         if (reset) begin
             read_index <= 0;

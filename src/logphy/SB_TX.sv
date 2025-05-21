@@ -1,7 +1,7 @@
 module SB_TX #(
     parameter buffer_size = 4 // Must be a power of 2 and >1
 )(
-    input clk_800MHz, //800MHz
+    input clk_800MHz,
     input reset,
 
     input  [63:0] data_i,
@@ -10,27 +10,19 @@ module SB_TX #(
 
     output data_valid_ack_o,
     output dataPin_o,
-    output clkPin_o // Remove 'reg' from here
+    output clkPin_o
 );
 
-    // Buffer and indices
     reg [63:0] buffer [buffer_size-1:0];
     reg [$clog2(buffer_size)-1:0] write_index;
     reg [$clog2(buffer_size)-1:0] read_index;
 
     reg [4:0] ctr_32; // 5 bits to count up to 32 (0-31)
     reg [5:0] ctr_64; // 6 bits to count up to 64 (0-63)
-    reg dataPin_r;
+    reg activate_clkPin_r;
     wire [63:0] data_w;
     wire valid_w;
-
-    assign dataPin_o = dataPin_r;
-
-    // Intermediate wire for clkPin
     wire clkPin_w;
-
-    assign clkPin_w = (state == IDLE) ? 1'b0 : clk_800MHz;
-    assign clkPin_o = clkPin_w;
 
     typedef enum logic [1:0] {
         TRANSMITING    = 2'd1,
@@ -39,6 +31,9 @@ module SB_TX #(
     } state_t;
 
     state_t state;
+    assign dataPin_o = (state == TRANSMITING) ? buffer[read_index][ctr_64] : 1'b0;
+    assign clkPin_w = (activate_clkPin_r) ? clk_800MHz : 1'b0;
+    assign clkPin_o = clkPin_w;
 
     ShiftReg_3d #(
         .DATA_BIT_WIDTH(64)
@@ -51,7 +46,6 @@ module SB_TX #(
         .d_i        (data_i),        
         .q_o        (data_w)               
     );
-
 
     always_ff @(posedge clk_800MHz or reset) begin
         if (reset) begin
@@ -74,44 +68,43 @@ module SB_TX #(
             read_index <= 0;
             ctr_32 <= 0;
             ctr_64 <= 0;
+            activate_clkPin_r <= 1'b0;
             state <= IDLE;
         end else begin
             case (state)
                 IDLE: begin
-                    dataPin_r <= 1'b0;
+                    activate_clkPin_r <= 1'b0;
                     if (write_index != read_index) begin
                         state <= TRANSMITING;
-                        dataPin_r <= buffer[read_index][ctr_64];
+                        activate_clkPin_r <= 1'b1;
                     end
                 end
 
                 TRANSMITING: begin
                     //data transmission is serialized to the dataPin_o (64bits)
                     //after that directly jump to POST_TRANSMIT
-                    if (ctr_64==6'd0) begin 
-                        ctr_64 <= ctr_64 + 1;
-                    end else if (ctr_64==6'd63) begin
+                    activate_clkPin_r <= 1'b1;
+                    if (ctr_64==6'd63) begin
                         ctr_64 <= 0;
                         read_index <= read_index + 1;
                         state <= POST_TRANSMIT;
-                        dataPin_r <= 1'b0;
                     end else begin
-                        dataPin_r <= buffer[read_index][ctr_64];
                         ctr_64 <= ctr_64 + 1;
                     end
                 end
 
                 POST_TRANSMIT: begin
+                    activate_clkPin_r <= 1'b1;
                     if (ctr_32 == 5'd31) begin
                         ctr_32 <= 0;
                         if (write_index != read_index) begin
                             state <= TRANSMITING;
                         end else begin
                             state <= IDLE;
+                            activate_clkPin_r <= 1'b0;
                         end
                     end else begin
                         ctr_32 <= ctr_32 + 1;
-                        dataPin_r <= 1'b0;
                     end
                 end
                 default: begin

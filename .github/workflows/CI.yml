@@ -48,6 +48,11 @@ jobs:
         verilator -I/tb/logphy -I/src/logphy --binary -f All_SV_filesList.f --top-module MB_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ps/1ps 
         ./obj_dir/VMB_tb
 
+    - name: Sideband TX-RX test
+      run: |
+        verilator -I/tb/logphy -I/src/logphy --binary -f All_SV_filesList.f --top-module SB_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ns/1ps 
+        ./obj_dir/VSB_tb
+
     # - name: Multiply test
     #   run: |
     #     verilator --binary device.sv multiplier_tb.sv --top-module multiplier_tb --trace --timing
