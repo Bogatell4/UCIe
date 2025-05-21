@@ -53,7 +53,7 @@ module SB_TX #(
     );
 
 
-    always_ff @(posedge clk_800MHz or posedge reset) begin
+    always_ff @(posedge clk_800MHz or reset) begin
         if (reset) begin
             integer i;
             write_index <= 0;
@@ -69,7 +69,7 @@ module SB_TX #(
         end
     end
 
-    always_ff @(posedge clk_800MHz or posedge reset) begin
+    always_ff @(posedge clk_800MHz or reset) begin
         if (reset) begin
             read_index <= 0;
             ctr_32 <= 0;

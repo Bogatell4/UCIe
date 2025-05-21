@@ -29,7 +29,7 @@ module SB_RX #(
     wire valid_w;
 
     // Shift register: capture data on negedge of clkPin_i out to syncro shift regs
-    always_ff @(negedge clkPin_i or posedge reset) begin
+    always_ff @(negedge clkPin_i or reset) begin
         if (reset) begin
             shift_reg <= 64'd0;
             postTran_cnt <= 5'd0;
@@ -68,7 +68,7 @@ module SB_RX #(
     );
 
     //msg_recieved and msg_flag logic
-    always_ff @(posedge clk_800MHz or posedge reset or posedge msg_recieved_ack) begin
+    always_ff @(posedge clk_800MHz or reset or posedge msg_recieved_ack) begin
         if (reset) begin
             msg_recieved <= 1'b0;
         end else if (msg_recieved_ack) msg_recieved <= 1'b0;
@@ -92,7 +92,7 @@ module SB_RX #(
     end
 
     // Read from buffer on posedge clk_100MHz
-    always_ff @(posedge clk_100MHz or posedge reset) begin
+    always_ff @(posedge clk_100MHz or reset) begin
         if (reset) begin
             read_index <= 0;
             data_o <= 64'd0;
