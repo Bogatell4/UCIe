@@ -84,7 +84,7 @@ endgenerate
 assign valid_o = | valid_o_shift_reg_w;
 
 // Control logic for enable signal
-always_ff @(posedge periph_clkPins_i[1] or posedge reset) begin
+always_ff @(posedge periph_clkPins_i[1] or reset) begin
     if (reset) begin
         enable_shift_reg_r <= 1'b0;
     end else begin
@@ -93,7 +93,7 @@ always_ff @(posedge periph_clkPins_i[1] or posedge reset) begin
     end
 end
 
-always_ff @(posedge clk or posedge reset) begin
+always_ff @(posedge clk or reset) begin
     if (reset) begin
         read_index <= 0;
     end else begin
@@ -103,7 +103,7 @@ always_ff @(posedge clk or posedge reset) begin
     end
 end
 
-always_ff @(posedge periph_clkPins_i[0] or posedge reset) begin // even bit assignation
+always_ff @(posedge periph_clkPins_i[0] or reset) begin // even bit assignation
     if (reset) begin
         ctr_even <= 2'b00;
         for (int i = 0; i < flit_buffer_size; i++) begin // Iterate over buffer dimension
@@ -138,7 +138,7 @@ always_ff @(posedge periph_clkPins_i[0] or posedge reset) begin // even bit assi
     end
 end
 
-always_ff @(posedge periph_clkPins_i[1] or posedge reset) begin // odd bit assignation
+always_ff @(posedge periph_clkPins_i[1] or reset) begin // odd bit assignation
     if (reset) begin
         ctr_odd <= 2'b00;
         flit_fragment_index <= 2'h0;
@@ -180,4 +180,3 @@ end
 
 
 endmodule
-

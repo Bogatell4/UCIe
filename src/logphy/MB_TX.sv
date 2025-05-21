@@ -58,7 +58,7 @@ module MB_TX #(
         end
     endgenerate
 
-    always_ff @(posedge clk or posedge reset) begin
+    always_ff @(posedge clk or reset) begin
         if (reset) begin
             write_index <= 0;
             //reset all the flit buffers
@@ -76,13 +76,13 @@ module MB_TX #(
     end
 
 
-    always_ff @(posedge clk or posedge reset) begin
+    always_ff @(posedge clk or reset) begin
         if (reset) transmiting_r <= 1'b0;
         else if (flit_fragment_index == 2'b11 && ctr_even == 2'b11) transmiting_r <= 1'b0;
         else if (transmiting_w) transmiting_r <= 1'b1;
     end
 
-    always_ff @(posedge clk or posedge reset) begin
+    always_ff @(posedge clk or reset) begin
         if(reset) begin
             ctr_even <= 2'b00;  
             flit_fragment_index <= 2'b00;
@@ -101,7 +101,7 @@ module MB_TX #(
         end
     end
 
-    always_ff @(negedge clk or posedge reset) begin
+    always_ff @(negedge clk or reset) begin
         if(reset) ctr_odd <= 2'b00;
         else if (transmiting_r == 1'b0) ctr_odd <= 2'b00;
         else
