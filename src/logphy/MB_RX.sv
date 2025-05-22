@@ -1,7 +1,5 @@
 // Used for UCIe standard package 16 line data bit on MainBand
-//TODO: parametrize to accept more data pins
 //TODO: ADD Track line? not sure functionality
-//TODO: ADD error in case of data_i overflow
 
 module MB_RX #(
     parameter flit_buffer_size = 2 // Number of flit buffers, cant be 1 and needs to ba a power of 2
@@ -86,7 +84,7 @@ endgenerate
 assign valid_o = | valid_o_shift_reg_w;
 
 // Control logic for enable signal
-always_ff @(posedge periph_clkPins_i[1] or reset) begin
+always_ff @(posedge periph_clkPins_i[1] or posedge reset) begin
     if (reset) begin
         enable_shift_reg_r <= 1'b0;
     end else begin
@@ -95,7 +93,7 @@ always_ff @(posedge periph_clkPins_i[1] or reset) begin
     end
 end
 
-always_ff @(posedge clk or reset) begin
+always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
         read_index <= 0;
     end else begin
@@ -105,7 +103,7 @@ always_ff @(posedge clk or reset) begin
     end
 end
 
-always_ff @(posedge periph_clkPins_i[0] or reset) begin // even bit assignation
+always_ff @(posedge periph_clkPins_i[0] or posedge reset) begin // even bit assignation
     if (reset) begin
         ctr_even <= 2'b00;
         for (int i = 0; i < flit_buffer_size; i++) begin // Iterate over buffer dimension
@@ -140,7 +138,7 @@ always_ff @(posedge periph_clkPins_i[0] or reset) begin // even bit assignation
     end
 end
 
-always_ff @(posedge periph_clkPins_i[1] or reset) begin // odd bit assignation
+always_ff @(posedge periph_clkPins_i[1] or posedge reset) begin // odd bit assignation
     if (reset) begin
         ctr_odd <= 2'b00;
         flit_fragment_index <= 2'h0;
