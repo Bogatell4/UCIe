@@ -20,51 +20,27 @@ module SB_RX #(
 
     reg [63:0] shift_reg;
     reg [5:0] bit_cnt;
-    reg [4:0] postTran_cnt; 
     reg msg_recieved;
-    reg msg_flag;
+    reg msg_valid;
     wire msg_recieved_ack;
     wire [63:0] data_sync_w;
     wire valid_w;
-
-
-    typedef enum logic [0:0] {
-        RECIEVING      = 1'b1,
-        POST_RECIEVING = 1'b0
-    } state_t;
-
-    state_t state;
 
     // Shift register: capture data on negedge of clkPin_i out to syncro shift regs
     always_ff @(negedge clkPin_i or reset) begin
         if (reset) begin
             shift_reg <= 64'd0;
-            postTran_cnt <= 5'd0;
             bit_cnt <= 6'd0;
-            msg_flag <= 1'b0;
-            state <= RECIEVING;
+            msg_valid <= 1'b0;
         end else if (enable_i) begin
-            case (state)
-                RECIEVING: begin
-                    bit_cnt <= bit_cnt + 1;
-                    postTran_cnt <= 5'd0;
-                    shift_reg <= {dataPin_i, shift_reg[63:1]};
-                    msg_flag <= 1'b0;
-                    if (bit_cnt == 6'd63) begin
-                        msg_flag <= 1'b1;
-                        state <= POST_RECIEVING;
-                    end
-                end
-                POST_RECIEVING: begin
-                    bit_cnt <= 6'd0;
-                    postTran_cnt <= postTran_cnt + 1;
-                    if (msg_recieved_ack) msg_flag <= 1'b0;
-                    if (postTran_cnt == 5'd31) begin
-                        state <= RECIEVING;
-                        postTran_cnt <= 5'd0;
-                    end
-                end
-            endcase
+            bit_cnt <= bit_cnt + 1;
+            shift_reg <= {dataPin_i, shift_reg[63:1]};
+            msg_valid <= 1'b0;
+            if (bit_cnt == 6'd63) begin
+                shift_reg <= {dataPin_i, shift_reg[63:1]};
+                msg_valid <= 1'b1;
+                bit_cnt <= 6'd0;
+            end
         end
     end
 
@@ -80,14 +56,16 @@ module SB_RX #(
         .q_o        (data_sync_w)               
     );
 
-    //msg_recieved and msg_flag logic
-    always_ff @(posedge clk_800MHz or reset or posedge msg_recieved_ack) begin
+    //msg_recieved and msg_valid logic
+    always_ff @(reset or posedge msg_recieved_ack or posedge msg_valid) begin
         if (reset) begin
             msg_recieved <= 1'b0;
-        end else if (msg_recieved_ack) msg_recieved <= 1'b0;
-        else begin 
-            if (msg_flag) msg_recieved <= 1'b1;
-            else msg_recieved <= msg_recieved;
+        end else begin
+            if (msg_recieved_ack) begin
+                msg_recieved <= 1'b0;
+            end else if (msg_valid) begin
+                msg_recieved <= 1'b1;
+            end
         end
     end
 

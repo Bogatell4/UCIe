@@ -108,9 +108,9 @@ module SB_tb;
 
     initial begin
         // Assign hex values directly
-        test_data[0] = 64'hFFBBCCDD11223344;
+        test_data[0] = 64'hF0AABBCC1122330F;
         test_data[1] = 64'h1234567890ABCDEF;
-        test_data[2] = 64'hDEADBEEFCAFEBABE;
+        test_data[2] = 64'hFEEDBEEFCAFEBABE;
 
         // Initialize signals
         data_i = 64'd0;
