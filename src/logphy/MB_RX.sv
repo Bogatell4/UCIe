@@ -1,10 +1,8 @@
-// Used for UCIe standard package 16 line data bit on MainBand
-//TODO: parametrize to accept more data pins
-//TODO: ADD Track line? not sure functionality
-//TODO: ADD error in case of data_i overflow
+// Current implementation supports UCIe standard package 16 line data bit on MainBand. 64B flit size
+// TODO: ADD Track line? not sure functionality
 
 module MB_RX #(
-    parameter flit_buffer_size = 2 // Number of flit buffers, cant be 1 and needs to ba a power of 2
+    parameter flit_buffer_size = 4 // Number of flit buffers, cant be 1 and needs to be a power of 2
 )(
     input clk,
     input reset, // Reset High stay, noposedge
@@ -14,32 +12,33 @@ module MB_RX #(
     input [15:0] dataPins_i,
 
     output valid_o,
-    output [7:0] data_o [63:0]
+    output [7:0] data_o [63:0] // 64 lanes, 8 bits each, total 64B flit size
 );
 
-//verilator lint_off MULTIDRIVEN
+// verilator lint_off MULTIDRIVEN
+// Possible warning of multi driven clocks for the same variable, made on purpose! chech electrical layer spec.
+// Got 2 clk lines input. actually odd and even entries are clocked each on a different clock
 reg [15:0] mem_async [flit_buffer_size-1:0] [3:0] [7:0];
-//possible warning of multi driven clocks for the same variable, made on purpose! chech electrical layer spec. Got 2 clk lines
 //verilator lint_on MULTIDRIVEN
 
-reg [$clog2(flit_buffer_size)-1:0] async_write_index;
-reg [$clog2(flit_buffer_size)-1:0] read_index;
-
-//counter to 4 to complete a full flit: Flit size is 64B and with 16 lanes we store 16B so we need 4 "fragments" to complete the flit
-//this could be calculated with a parameter with amount of lanes and flit size
-reg [1:0] flit_fragment_index;
-
+// this two counters are used to keep track of the even and odd entries
 reg [1:0] ctr_even;
 reg [1:0] ctr_odd;
 
-wire [7:0] selected_mem_async_w [63:0];
+//flit fragment index counts to 4 to complete a full flit: Flit size is 64B and with 16 lanes we store 16B so we need 4 "fragments" to complete the flit
+//this could be calculated with a parameter with amount of lanes and flit size
+reg [1:0] flit_fragment_index;
+
+reg [$clog2(flit_buffer_size)-1:0] async_write_index;
+reg [$clog2(flit_buffer_size)-1:0] read_index;
 
 reg enable_shift_reg_r;
 wire valid_o_shift_reg_w;
 wire enable_ack_shift_reg_w;
 
-// Generate wire multiplexer to select the flit buffer to read depending on read_index
-// this wire routing also deserialises the data and maps it accordingly to the shift registers
+// Generate wire multiplexer to select the flit buffer to read with read_index
+// this wire routing also deserialises the data and maps it to the shift register for syncronization
+wire [7:0] selected_mem_async_w [63:0];
 generate
 genvar h, b;
     for (h = 0; h < 4; h++) begin : gen_mux_wires
@@ -81,11 +80,12 @@ genvar k;
         );
     end
 endgenerate
-
-// Combine valid signals from all ShiftReg_3d instances
+// Combine valid signals from all ShiftReg_3d instances, not very efficient or error proof, but works for now
 assign valid_o = | valid_o_shift_reg_w;
 
-// Control logic for enable signal
+// Control logic for enable signal of shift registers for syncronization
+// Enable if write index diferent from read index of the mem buffer
+// clocked with the even clock which is a fast clock (2GHz), the same clk as the last bit of a flit is writen
 always_ff @(posedge periph_clkPins_i[1] or reset) begin
     if (reset) begin
         enable_shift_reg_r <= 1'b0;
@@ -95,6 +95,8 @@ always_ff @(posedge periph_clkPins_i[1] or reset) begin
     end
 end
 
+// Control logic for the read_index, clocked with the main slow clk (100MHz)
+// This is used to read the data from the mem_async buffer and pass it to the shift registers
 always_ff @(posedge clk or reset) begin
     if (reset) begin
         read_index <= 0;
@@ -105,10 +107,12 @@ always_ff @(posedge clk or reset) begin
     end
 end
 
-always_ff @(posedge periph_clkPins_i[0] or reset) begin // even bit assignation
+// even bit assignation of the flit buffer
+// clocked with a phase of the periph_clkPins_i[0] which is a fast clock (2GHz)
+always_ff @(posedge periph_clkPins_i[0] or reset) begin 
     if (reset) begin
         ctr_even <= 2'b00;
-        for (int i = 0; i < flit_buffer_size; i++) begin // Iterate over buffer dimension
+        for (int i = 0; i < flit_buffer_size; i++) begin // Iterate over full buffer dimension
             for (int j = 0; j < 4; j++) begin
                 // Reset all even entries
                 mem_async[i][j][0] <= 16'h0;
@@ -140,12 +144,13 @@ always_ff @(posedge periph_clkPins_i[0] or reset) begin // even bit assignation
     end
 end
 
-always_ff @(posedge periph_clkPins_i[1] or reset) begin // odd bit assignation
+// Same but now with the odd entries and clocked with the other phase of the periph_clkPins_i[1] (2GHz)
+always_ff @(posedge periph_clkPins_i[1] or reset) begin
     if (reset) begin
         ctr_odd <= 2'b00;
         flit_fragment_index <= 2'h0;
         async_write_index <= 0;
-        for (int i = 0; i < flit_buffer_size; i++) begin // Iterate over buffer dimension
+        for (int i = 0; i < flit_buffer_size; i++) begin
             for (int j = 0; j < 4; j++) begin
                 // Reset all odd entries
                 mem_async[i][j][1] <= 16'h0; 
@@ -182,4 +187,3 @@ end
 
 
 endmodule
-
