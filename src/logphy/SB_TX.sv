@@ -1,10 +1,12 @@
+// Module for Transmission through sideband
+
 module SB_TX #(
     parameter buffer_size = 4 // Must be a power of 2 and >1
 )(
     input clk_800MHz,
     input reset,
 
-    input  [63:0] data_i,
+    input  [63:0] data_i, // Data input, single sideband msg is 64 bits
     input  valid_i,
     input  enable_i,
 
@@ -13,6 +15,7 @@ module SB_TX #(
     output clkPin_o
 );
 
+    // Sideband msg buffer
     reg [63:0] buffer [buffer_size-1:0];
     reg [$clog2(buffer_size)-1:0] write_index;
     reg [$clog2(buffer_size)-1:0] read_index;
@@ -24,17 +27,20 @@ module SB_TX #(
     wire valid_w;
     wire clkPin_w;
 
+    //state machine for the transmission control
     typedef enum logic [1:0] {
         TRANSMITING    = 2'd1,
         POST_TRANSMIT  = 2'd2,
         IDLE           = 2'd0
     } state_t;
-
     state_t state;
+
+    // pin wire assignations
     assign dataPin_o = (state == TRANSMITING) ? buffer[read_index][ctr_64] : 1'b0;
     assign clkPin_w = (state == TRANSMITING && clk_active_r) ? clk_800MHz : 1'b0;
     assign clkPin_o = clkPin_w;
 
+    // Shift register to handle the data input syncronization
     ShiftReg_3d #(
         .DATA_BIT_WIDTH(64)
     ) shiftreg_inst (
@@ -47,6 +53,7 @@ module SB_TX #(
         .q_o        (data_w)               
     );
 
+    // write index and data to the buffer logic
     always_ff @(posedge clk_800MHz or reset) begin
         if (reset) begin
             integer i;
@@ -63,6 +70,7 @@ module SB_TX #(
         end
     end
 
+    // Active clock signal logic, used to control the clkPin_o
     always @(negedge clk_800MHz or reset) begin
         if (reset) clk_active_r <= 1;
         else begin
@@ -71,6 +79,8 @@ module SB_TX #(
         end
     end
 
+    // State machine for transmission control
+    // Check figure 4-8 of the spec for the sideband transmission behaviour
     always_ff @(posedge clk_800MHz or reset) begin
         if (reset) begin
             read_index <= 0;

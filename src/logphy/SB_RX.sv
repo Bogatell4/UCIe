@@ -1,3 +1,5 @@
+// Module for Reception through sideband
+
 module SB_RX #(
     parameter buffer_size = 4 // Must be a power of 2 and >1
 )(
@@ -7,8 +9,8 @@ module SB_RX #(
     input enable_i,   // Enable signal for the receiver
     input msg_req_i,  // Request to put out the FIFO a full message
 
-    input dataPin_i,   // Serial data input from TX
-    input clkPin_i,    // Serial clock input from TX
+    input dataPin_i,   // Serial data pin input from TX
+    input clkPin_i,    // Serial clock pin input from TX
 
     output reg [63:0] data_o, 
     output reg valid_o        
@@ -27,6 +29,7 @@ module SB_RX #(
     wire valid_w;
 
     // Shift register: capture data on negedge of clkPin_i out to syncro shift regs
+    // Outputs the full 64 bit message when the bit count reaches 64, meaning all data has been recieved and deserialized
     always_ff @(negedge clkPin_i or reset) begin
         if (reset) begin
             shift_reg <= 64'd0;
@@ -44,6 +47,7 @@ module SB_RX #(
         end
     end
 
+    // Syncronization shift register for a full 64 bit SB message
     ShiftReg_3d #(
         .DATA_BIT_WIDTH(64)
     ) shiftreg_inst (
