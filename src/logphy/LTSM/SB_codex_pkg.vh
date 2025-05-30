@@ -1,4 +1,3 @@
-package SB_codex_pkg;
 
 // Code and decode functions for SB messages
 // Expand in order to add more messages along with the function to translate (just below)
@@ -305,4 +304,3 @@ function automatic void decode_SB_msg(
     endcase
 endfunction
 
-endpackage

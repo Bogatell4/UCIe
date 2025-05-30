@@ -1,3 +1,5 @@
+`include "SB_codex_pkg.sv"
+
 module LTSM_top (
 
     input clk_100MHz,
@@ -33,6 +35,7 @@ module LTSM_top (
     reg enable_SB_tx;
     reg enable_SB_rx;
 
+    SB_msg_t SB_msg;
     /* Instantiate SB_TX
     SB_TX #(
         .buffer_size(4)
