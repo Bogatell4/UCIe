@@ -83,15 +83,18 @@ module LTSM_top (
     typedef enum logic [2:0] {
         SBPins_to_Z = 3'd0,
         SBPins_disabled = 3'd1,
-        SBPins_to_SBINIT = 3'd2
+        SBPins_to_SBINIT = 3'd2,
+        SBPins_to_COMS = 3'd3
     } SB_mux_sel_t;
 
     typedef enum logic [2:0] {
         MBPins_to_Z = 3'd0,
         MBPins_disabled = 3'd1,
-        MBPins_to_MBINIT = 3'd2
+        MBPins_to_MBINIT = 3'd2,
+        MBPins_to_COMS = 3'd3
     } MB_mux_sel_t;
 
+    // Muxes select signals for SB and MB pins
     SB_mux_sel_t SB_clkPin_TX_sel;
     SB_mux_sel_t SB_dataPin_TX_sel;
     SB_mux_sel_t SB_clkPin_RX_sel;
@@ -102,17 +105,25 @@ module LTSM_top (
     MB_mux_sel_t MB_clkPins_RX_sel;
     MB_mux_sel_t MB_dataPins_RX_sel;
 
+    // Signal Sources for the muxes
     logic SB_clkPin_TX_SBINIT, SB_clkPin_RX_SBINIT;
     logic SB_dataPin_TX_SBINIT, SB_dataPin_RX_SBINIT;
+
+    logic SB_clkPin_TX_TRANSMITTER, SB_clkPin_RX_RECIEVER;
+    logic SB_dataPin_TX_TRANSMITTER, SB_dataPin_RX_RECIEVER;
+
     logic [1:0] MB_clkPins_TX_MBINIT, MB_clkPins_RX_MBINIT;
     logic [15:0] MB_dataPins_TX_MBINIT, MB_dataPins_RX_MBINIT;
 
+    // Mux logic
     assign SB_clkPin_TX_o  = (SB_clkPin_TX_sel == SBPins_to_Z) ? 'z  :
                             (SB_clkPin_TX_sel == SBPins_disabled) ? '0  :
+                            (SB_clkPin_TX_sel == SBPins_to_COMS) ? SB_clkPin_TX_TRANSMITTER :
                             (SB_clkPin_TX_sel == SBPins_to_SBINIT) ? SB_clkPin_TX_SBINIT  : 'z;
 
     assign SB_dataPin_TX_o = (SB_dataPin_TX_sel == SBPins_to_Z) ? 'z :
                             (SB_dataPin_TX_sel == SBPins_disabled) ? '0 :
+                            (SB_dataPin_TX_sel == SBPins_to_COMS) ? SB_dataPin_TX_TRANSMITTER :
                             (SB_dataPin_TX_sel == SBPins_to_SBINIT) ? SB_dataPin_TX_SBINIT : 'z;
 
     assign MB_clkPins_o    = (MB_clkPins_TX_sel == MBPins_to_Z) ? 'z    :
@@ -126,6 +137,10 @@ module LTSM_top (
 
     assign SB_clkPin_RX_SBINIT   = (SB_clkPin_RX_sel   == SBPins_to_SBINIT) ? SB_clkPin_RX_i   : 1'b0;
     assign SB_dataPin_RX_SBINIT  = (SB_dataPin_RX_sel  == SBPins_to_SBINIT) ? SB_dataPin_RX_i  : 1'b0;
+
+    assign SB_clkPin_RX_RECIEVER   = (SB_clkPin_RX_sel   == SBPins_to_COMS) ? SB_clkPin_RX_i   : 1'b0;
+    assign SB_dataPin_RX_RECIEVER  = (SB_dataPin_RX_sel  == SBPins_to_COMS) ? SB_dataPin_RX_i  : 1'b0;
+
     assign MB_clkPins_RX_MBINIT  = (MB_clkPins_RX_sel  == MBPins_to_MBINIT) ? MB_clkPins_i     : 2'b00;
     assign MB_dataPins_RX_MBINIT = (MB_dataPins_RX_sel == MBPins_to_MBINIT) ? MB_dataPins_i    : 16'h0000;
 
@@ -185,6 +200,14 @@ module LTSM_top (
                 SB_dataPin_TX_sel = SBPins_disabled;
                 SB_clkPin_RX_sel = SBPins_to_SBINIT;
                 SB_dataPin_RX_sel = SBPins_to_SBINIT;
+            end
+
+            SBINIT: begin
+                MB_clkPins_TX_sel = MBPins_to_Z;
+                MB_dataPins_TX_sel = MBPins_to_Z;
+                MB_clkPins_RX_sel = MBPins_to_MBINIT;
+                MB_dataPins_RX_sel = MBPins_to_MBINIT;
+
 
             end
 
