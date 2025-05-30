@@ -66,6 +66,7 @@ typedef enum logic [2:0] {
 } srcid_t;
 
 typedef enum logic [2:0] {
+    Default = 3'b000,
     D2D_Adapter_dst = 3'b001,
     Physical_Layer = 3'b010
     //Other encodings reserved
@@ -88,6 +89,24 @@ typedef struct packed {
     logic dp; //Data parity, not used in this version
 
 } SB_msg_t;
+
+function SB_msg_t reset_SB_msg();
+    SB_msg_t msg;
+    msg.msg_num  = CODEX_ERROR;
+    msg.opcode   = MemRead_32b; // Default opcode, can be changed later
+    msg.srcid    = Stack0_Protocol; // Default source ID
+    msg.dstid    = Default; // Default destination ID
+    msg.tag      = 5'd0;
+    msg.be       = 8'd0;
+    msg.ep       = 1'b0;
+    msg.cr       = 1'b0;
+    msg.addr     = 24'd0;
+    msg.Status   = 3'd0;
+    msg.msg_info = 16'd0;
+    msg.cp       = 1'b0; // Control parity, not used in this version
+    msg.dp       = 1'b0; // Data parity, not used in this version
+    return msg;
+endfunction
 
 function automatic void encode_SB_msg(
     input  SB_msg_t msg,
