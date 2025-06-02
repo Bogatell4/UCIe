@@ -36,6 +36,7 @@ reg enable_SB_rx;
 
 SB_msg_t SB_msg_RX;
 SB_msg_t SB_msg_TX;
+
 /* Instantiate SB_TX
 SB_TX #(
     .buffer_size(4)
@@ -138,11 +139,62 @@ typedef enum {
     MBINIT,
     MBTRAIN,
     LINKINIT,
+    L1_L2,
     ACTIVE
 } LT_state_t;
 
 LT_state_t LT_Current_state;
 LT_state_t LT_NEXT_state;
+
+logic enable_SBINIT;
+logic SBINIT_done;
+
+
+// 4ms counter for 100MHz clock,
+// always need to stay 4ms when entering RESET state, modify this value if needed
+reg [18:0] reset_counter; // 19 bits are enough for 400,000
+wire counter_reset_flag = (reset_counter == 19'd399_999); // 4ms counter reset flag
+logic start_reset_counter;
+
+always_ff @(posedge clk_100MHz or reset) begin
+    if (reset) begin
+        reset_counter <= 0;
+    end else if (counter_reset_flag) begin
+        reset_counter <= 0;
+    end else if (start_reset_counter) begin
+        reset_counter <= reset_counter + 1;
+    end
+end
+
+// 8ms counter for 100MHz clock, Timeout
+// always need to stay 4ms when entering RESET state, modify this value if needed
+reg [19:0] timeout_counter; // 19 bits are enough for 800,000
+wire timeout_flag = (timeout_counter == 20'd799_999); // 8ms counter timeout flag
+logic reset_timeout_counter; // used to reset timout counter for other states if needed
+logic reset_state_timeout_counter;
+
+always @ (posedge clk_100MHz or reset) begin
+    if (reset) begin
+        timeout_counter <= 0;
+    end else if (reset_timeout_counter) begin 
+        timeout_counter <= 0;     
+    end else if (reset_state_timeout_counter) begin
+        timeout_counter <= 0;
+    end else if (LT_Current_state == LT_NEXT_state) begin
+        timeout_counter <= timeout_counter + 1;
+    end
+end
+
+//This states don't have a timeout condition
+always_comb begin
+    if (LT_Current_state == RESET ||
+        LT_Current_state == ACTIVE ||
+        LT_Current_state == L1_L2 ||
+        LT_Current_state == TRAINERROR) begin
+        reset_state_timeout_counter = 1'b1;
+        end
+    else reset_state_timeout_counter = 1'b0;
+end
 
 //Current state update
 always_ff @(posedge clk_100MHz or posedge reset) begin
@@ -152,24 +204,29 @@ end
 
 // Next state logic
 always_comb begin
+    if (timeout_flag) begin
+        LT_NEXT_state = TRAINERROR; // If timeout, go to TRAINERROR state
+    end else begin
     unique case (LT_Current_state)
 
         RESET: begin
-            if (enable_i && start_LT_i) LT_NEXT_state = SBINIT;
+            if (enable_i && start_LT_i && counter_reset_flag) LT_NEXT_state = SBINIT;
             else LT_NEXT_state = LT_Current_state; // Stay in RESET state
         end
 
         SBINIT: begin
+
         end
         default: LT_NEXT_state = RESET;
     endcase
+end
 end
 
 // Current state actions
 always_comb begin
     unique case (LT_Current_state)
 
-        RESET: begin
+        RESET: begin            // Reset all internal signals
             SB_msg_RX = reset_SB_msg();
             SB_msg_TX = reset_SB_msg();
             enable_SB_rx = 1'b1;
@@ -184,6 +241,8 @@ always_comb begin
             SB_clkPin_TX_sel = SBPins_disabled;
             SB_dataPin_TX_sel = SBPins_disabled;
 
+            start_reset_counter = 1'b1;
+
         end
 
         SBINIT: begin
@@ -191,6 +250,7 @@ always_comb begin
             MB_dataPins_TX_sel = MBPins_to_Z;
             SB_clkPin_TX_sel = SBPins_to_SBINIT;
             SB_dataPin_TX_sel = SBPins_to_SBINIT;
+
 
 
         end
