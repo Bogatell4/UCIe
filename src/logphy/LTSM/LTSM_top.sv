@@ -37,7 +37,7 @@ reg enable_SB_rx;
 SB_msg_t SB_msg_RX;
 SB_msg_t SB_msg_TX;
 
-/* Instantiate SB_TX
+// Instantiate SB_TX
 SB_TX #(
     .buffer_size(4)
 ) SB_tx_inst (
@@ -49,17 +49,17 @@ SB_TX #(
     .data_valid_ack_o(SB_msg_TX_valid_ack_w),
     .dataPin_o(SB_dataPin_TX_o),
     .clkPin_o(SB_clkPin_TX_o)
-);*/
+);
 
 //logic for set and async reset of SB_TX_valid_flag
-/* MAYBE NOT NEEDED use if too many msgs are sent out at once
+// MAYBE NOT NEEDED use if too many msgs are sent out at once
 always_ff @(posedge clk_100MHz or reset or posedge SB_TX_valid_ack_w) begin
     if (reset) SB_TX_valid_flag <= 1'b0;
     else if (SB_TX_valid_ack_w) SB_TX_valid_flag <= 1'b0;
     else if (SB_TX_valid) SB_TX_valid_flag <= 1'b1;
-end*/
+end
 
-/* Instantiate SB_RX
+// Instantiate SB_RX
 SB_RX #(
     .buffer_size(4)
 ) SB_rx_inst (
@@ -72,15 +72,15 @@ SB_RX #(
     .clkPin_i(SB_clkPin_RX_i),  
     .data_o(SB_msg_i_w),
     .valid_o(SB_msg_valid_iW)
-);*/
+);
 
 //logic for set and async reset of SB_msg_req_flag
-/* MAYBE NOT NEEDED use if too many msgs come out at once
+// MAYBE NOT NEEDED use if too many msgs come out at once
 always_ff @(posedge clk_100MHz or reset or posedge SB_msg_valid_i_w) begin
     if (reset) SB_msg_req_flag <= 1'b0;
     else if (SB_msg_valid_i_w) SB_msg_req_flag <= 1'b0;
     else if (SB_msg_req) SB_msg_req_flag <= 1'b1;
-end*/
+end
 
 typedef enum logic [2:0] {
     SBPins_to_Z = 3'd0,
@@ -95,7 +95,7 @@ typedef enum logic [2:0] {
     MBPins_to_MBINIT = 3'd2,
     MBPins_to_COMS = 3'd3,
     MBPins_to_MBTRAIN = 3'd4
-    
+
 } MB_mux_sel_t;
 
 // Muxes select signals for SB and MB pins
