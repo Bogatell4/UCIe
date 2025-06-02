@@ -93,7 +93,9 @@ typedef enum logic [2:0] {
     MBPins_to_Z = 3'd0,
     MBPins_disabled = 3'd1,
     MBPins_to_MBINIT = 3'd2,
-    MBPins_to_COMS = 3'd3
+    MBPins_to_COMS = 3'd3,
+    MBPins_to_MBTRAIN = 3'd4
+    
 } MB_mux_sel_t;
 
 // Muxes select signals for SB and MB pins
@@ -112,6 +114,9 @@ logic SB_dataPin_TX_TRANSMITTER;
 
 logic [1:0] MB_clkPins_TX_MBINIT;
 logic [15:0] MB_dataPins_TX_MBINIT;
+
+logic [1:0] MB_clkPins_TX_MBTRAIN;
+logic [15:0] MB_dataPins_TX_MBTRAIN;
 
 // Mux logic
 assign SB_clkPin_TX_o  = (SB_clkPin_TX_sel == SBPins_to_Z) ? 'z  :

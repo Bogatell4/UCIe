@@ -19,7 +19,6 @@ module SBINIT (
     output logic RX_msg_req_o,
     input logic RX_msg_valid_i,
 
-    
 );
 
 endmodule
