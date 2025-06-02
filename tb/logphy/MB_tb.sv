@@ -55,7 +55,7 @@ module MB_tb;
 
     initial begin
         $dumpfile("../MB_tb.vcd");
-        $dumpvars(0, MB_RX_tb);
+        $dumpvars(0, MB_tb);
     end
 
     // Clock generation
@@ -130,6 +130,8 @@ module MB_tb;
         reset = 1;
         #1000 reset = 0;
 
+
+        //this valid/enable signaling needs to be done with an asyncronous reset register with the ack
         for (int flitNum = 0; flitNum < 3; flitNum++) begin
             @(posedge clk_100MHz);
             valid_i = 1;
