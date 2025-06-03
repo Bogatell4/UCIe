@@ -87,7 +87,6 @@ typedef struct packed {
     logic [15:0] msg_info;
     logic cp; //Control parity, not used in this version
     logic dp; //Data parity, not used in this version
-
 } SB_msg_t;
 
 function SB_msg_t reset_SB_msg();

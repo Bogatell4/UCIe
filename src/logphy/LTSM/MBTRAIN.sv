@@ -18,7 +18,7 @@ module MBTRAIN (
     output logic TX_msg_valid_o,
     input SB_msg_t RX_msg_i,
     input logic RX_msg_valid_i,
-    output logic RX_msg_req_o,
+    output logic RX_msg_req_o
 
 );
 

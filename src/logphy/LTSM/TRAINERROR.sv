@@ -1,13 +1,13 @@
 `include "SB_codex_pkg.vh"
 
-module LINKINIT (
+module TRAINERROR (
     input clk_100MHz,
     input clk_800MHz,
     input clk_2GHz,
     input reset,
     input enable_i,
 
-    output logic LINKINIT_done_o,
+    output logic TRAINERROR_done_o,
 
     output SB_msg_t TX_msg_o,
     output logic TX_msg_valid_o,
