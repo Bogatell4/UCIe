@@ -7,13 +7,17 @@ module LINKINIT (
     input reset,
     input enable_i,
 
-    output logic LINKINIT_done_o,
+    output LINKINIT_done_o,
 
     output SB_msg_t TX_msg_o,
-    output logic TX_msg_valid_o,
+    output TX_msg_valid_o,
+    input TX_msg_valid_ack_i,
+    
     input SB_msg_t RX_msg_i,
-    input logic RX_msg_valid_i,
-    output logic RX_msg_req_o
+    input RX_msg_valid_i,
+    output RX_msg_req_o,
+
+    output reset_state_timeout_counter_o
 
 );
 
