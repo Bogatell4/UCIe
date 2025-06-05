@@ -1,3 +1,5 @@
+`ifndef SB_CODEX_PKG_VH
+`define SB_CODEX_PKG_VH
 
 // Code and decode functions for SB messages
 // Expand in order to add more messages along with the function to translate (just below)
@@ -321,4 +323,6 @@ function automatic void decode_SB_msg(
         end
     endcase
 endfunction
+
+`endif // SB_CODEX_PKG_VH
 

@@ -14,12 +14,13 @@ module SB_TX #(
     input  valid_i,
     input  enable_i,
 
-    output send_next_flag_o, // Flag set to 1 indicates that the module is ready for a new message at the input. 
+    output logic send_next_flag_o, // Flag set to 1 indicates that the module is ready for a new message at the input. 
 
-    output data_valid_ack_o,
     output dataPin_o,
     output clkPin_o
 );
+
+
 
     // Sideband msg buffer
     reg [63:0] buffer [fast_buffer_size-1:0];
@@ -34,6 +35,8 @@ module SB_TX #(
     wire clkPin_w;
 
     logic valid_ShiftReg_flag;
+    wire data_valid_ack_o;
+
     logic [63:0] Stored_data_r;
     wire [63:0] ShiftReg_data_w;
     wire [63:0] encoded_msg_w;
@@ -60,6 +63,8 @@ module SB_TX #(
         end
     end
 
+    
+
     always_comb begin
         encode_SB_msg(SB_msg_i, encoded_msg_w, expect_32b_data_w, expect_64b_data_w);
     end   
@@ -70,9 +75,8 @@ module SB_TX #(
 
 
     logic delay1;
-    assign send_next_flag_o = (delay1 == 1'b1) ? 1'b0 : !valid_ShiftReg_flag; 
     // async reset of the ShiftReg_data flag
-    always_ff @(posedge clk_100MHz or reset or posedge data_valid_ack_o) begin
+    always_ff @(negedge clk_100MHz or reset or posedge data_valid_ack_o) begin
         if (reset) begin
             valid_ShiftReg_flag <= 1'b0;
             delay1 <= 1'b0;
@@ -88,6 +92,18 @@ module SB_TX #(
             delay1 <= 1'b0; // Reset the delay flag after one cycle
         end
     end
+
+    always_ff @(negedge clk_100MHz) begin
+        if (reset) begin
+            send_next_flag_o <= 1'b0;
+        end else begin
+            if (delay1 == 1'b1) begin
+                send_next_flag_o <= 1'b1; 
+            end else if ((expect_32b_data_w || expect_64b_data_w) && valid_i && enable_i ) begin
+                send_next_flag_o <= 1'b0; 
+            end else send_next_flag_o <= 1'b1;
+        end
+    end 
 
     // Shift register to handle the data input syncronization
     ShiftReg_3d #(

@@ -12,13 +12,13 @@ module LINKINIT (
     output SB_msg_t TX_msg_o,
     output TX_msg_valid_o,
     input TX_msg_valid_ack_i,
-    
+
     input SB_msg_t RX_msg_i,
     input RX_msg_valid_i,
     output RX_msg_req_o,
 
     output reset_state_timeout_counter_o
 
-);
+  );
 
 endmodule
