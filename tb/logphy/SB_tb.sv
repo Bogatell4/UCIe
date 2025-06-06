@@ -75,8 +75,8 @@ module SB_tb;
     always #5    clk_100MHz <= ~clk_100MHz;  // 100MHz -> 10ns period
 
     // Test variables
-    SB_msg_t test_msgs [2:0];
-    reg [63:0] test_data [2:0];
+    SB_msg_t test_msgs [3:0];
+    reg [63:0] test_data [3:0];
     integer send_index;
     integer recieve_index;
 
@@ -91,27 +91,36 @@ module SB_tb;
         test_msgs[0].msg_info = 16'hBEEF;
         test_data[0] = 64'd0; // Not used for this message
 
-        // Example 2: 32b Register Read (was Example 1)
+        // Example 2: Another message without data (new test)
         test_msgs[1] = reset_SB_msg();
-        test_msgs[1].opcode = MemRead_32b;
+        test_msgs[1].opcode = Message_without_Data;
+        test_msgs[1].msg_num = SBINIT_out_of_reset;
         test_msgs[1].srcid = Stack0_Protocol;
         test_msgs[1].dstid = Default;
-        test_msgs[1].tag = 5'd1;
-        test_msgs[1].be = 8'hFF;
-        test_msgs[1].addr = 24'h123456;
-        test_msgs[1].cr = 1'b1;
-        test_data[1] = 64'hAABBCCDD11223344;
+        test_msgs[1].msg_info = 16'h1234;
+        test_data[1] = 64'd0; // Not used for this message
 
-        // Example 3: 64b Register Write (unchanged)
+        // Example 3: 32b Register Read (was Example 1)
         test_msgs[2] = reset_SB_msg();
-        test_msgs[2].opcode = MemWrite_64b;
-        test_msgs[2].srcid = D2D_Adapter_src;
-        test_msgs[2].dstid = D2D_Adapter_dst;
-        test_msgs[2].tag = 5'd7;
-        test_msgs[2].be = 8'h0F;
-        test_msgs[2].addr = 24'h654321;
-        test_msgs[2].cr = 1'b0;
-        test_data[2] = 64'hCAFEBABEDEADBEEF;
+        test_msgs[2].opcode = MemRead_32b;
+        test_msgs[2].srcid = Stack0_Protocol;
+        test_msgs[2].dstid = Default;
+        test_msgs[2].tag = 5'd1;
+        test_msgs[2].be = 8'hFF;
+        test_msgs[2].addr = 24'h123456;
+        test_msgs[2].cr = 1'b1;
+        test_data[2] = 64'hAABBCCDD11223344;
+
+        // Example 4: 64b Register Write (unchanged)
+        test_msgs[3] = reset_SB_msg();
+        test_msgs[3].opcode = MemWrite_64b;
+        test_msgs[3].srcid = D2D_Adapter_src;
+        test_msgs[3].dstid = D2D_Adapter_dst;
+        test_msgs[3].tag = 5'd7;
+        test_msgs[3].be = 8'h0F;
+        test_msgs[3].addr = 24'h654321;
+        test_msgs[3].cr = 1'b0;
+        test_data[3] = 64'hCAFEBABEDEADBEEF;
     end
 
     // Send logic
@@ -123,7 +132,7 @@ module SB_tb;
             send_index <= 0;
         end else if (enable_tx) begin
             if (send_next_flag_o) begin
-                if (send_index < 3) begin
+                if (send_index < 4) begin
                     dataBus_i <= test_data[send_index];
                     SB_msg_i <= test_msgs[send_index];
                     valid_i <= 1;

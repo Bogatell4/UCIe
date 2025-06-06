@@ -2,7 +2,7 @@
 `include "LTSM/SB_codex_pkg.vh"
 
 module SB_TX #(
-    parameter fast_buffer_size = 4 // Must be a power of 2 and >1
+    parameter fast_buffer_size = 8 // Must be a power of 2 and >1
 )(
     input clk_100MHz,
     input clk_800MHz,
@@ -45,25 +45,33 @@ module SB_TX #(
     reg expect_32b_data_r;
     reg expect_64b_data_r;
 
-    always_ff @(posedge clk_100MHz or reset) begin
+    always_ff @(negedge clk_100MHz or reset) begin
         if (reset) begin
             Stored_data_r <= 64'd0;
+        end
+        else if (valid_i && enable_i) begin
+            Stored_data_r <= dataBus_i;
+        end
+    end
+
+    always_ff @(posedge clk_100MHz or reset) begin
+        if (reset) begin
             expect_32b_data_r <= 1'b0;
             expect_64b_data_r <= 1'b0;
         end
         else if (valid_i && enable_i) begin
-            Stored_data_r <= dataBus_i;
             if (expect_32b_data_r==0'b0 && expect_64b_data_r==0'b0) begin
                 expect_32b_data_r <= expect_32b_data_w;
                 expect_64b_data_r <= expect_64b_data_w;
-            end else begin
+            end 
+        end else begin
+            if (expect_32b_data_r || expect_64b_data_r) begin
                 expect_32b_data_r <= 1'b0;
                 expect_64b_data_r <= 1'b0;
             end
         end
     end
 
-    
 
     always_comb begin
         encode_SB_msg(SB_msg_i, encoded_msg_w, expect_32b_data_w, expect_64b_data_w);
@@ -118,7 +126,6 @@ module SB_TX #(
         .q_o        (data_w)               
     );
 
-
     //state machine for the transmission control
     typedef enum logic [1:0] {
         TRANSMITING    = 2'd1,
@@ -131,8 +138,6 @@ module SB_TX #(
     assign dataPin_o = (state == TRANSMITING) ? buffer[read_index][ctr_64] : 1'b0;
     assign clkPin_w = (state == TRANSMITING && clk_active_r) ? clk_800MHz : 1'b0;
     assign clkPin_o = clkPin_w;
-
-
 
     // write index and data to the buffer logic
     always_ff @(posedge clk_800MHz or reset) begin
@@ -207,5 +212,4 @@ module SB_TX #(
             endcase
         end
     end
-
 endmodule

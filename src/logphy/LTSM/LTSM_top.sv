@@ -34,14 +34,14 @@ logic SB_msg_req;
 
 wire SB_TX_valid_w;
 logic SB_TX_valid_flag;
-wire SB_TX_valid_ack_w;
+wire SB_TX_sendNext_w;
 logic enable_SB_tx;
 logic enable_SB_rx;
 
 SB_msg_t SB_msg_RX;
 SB_msg_t SB_msg_TX;
-logic [63:0] SB_msg64_TX_o;
-logic [63:0] SB_msg64_RX_i;
+wire [63:0] SB_dataBus_TX;
+wire [63:0] SB_dataBus_RX;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Signal Sources for the muxes
@@ -56,8 +56,8 @@ wire [1:0] MB_clkPins_TX_MBINIT;
 wire [15:0] MB_dataPins_TX_MBINIT;
 wire [1:0] MB_clkPins_TX_MBTRAIN;
 wire [15:0] MB_dataPins_TX_MBTRAIN;
-//wire [1:0] MB_clkPins_TX_TRANSMITTER; Unused for now, use when MB modules are instantiated
-//wire [15:0] MB_dataPins_TX_TRANSMITTER;
+wire [1:0] MB_clkPins_TX_TRANSMITTER;
+wire [15:0] MB_dataPins_TX_TRANSMITTER;
 
 // SB valid sources
 wire SB_TX_valid_SBINIT;
@@ -114,7 +114,7 @@ wire MBINIT_done;
 wire MBTRAIN_done;
 wire LINKINIT_done;
 wire ACTIVE_done;
-wire TRAINERROR_done; //needed? review active state or PHYRETRAIN flag?
+wire TRAINERROR_done;
 
 // TX msg output variables for multiplexers
 SB_msg_t SB_msg_TX_SBINIT;
@@ -124,6 +124,14 @@ SB_msg_t SB_msg_TX_LINKINIT;
 SB_msg_t SB_msg_TX_ACTIVE;
 SB_msg_t SB_msg_TX_TRAINERROR;
 
+// SB TX data bus mux sources
+wire [63:0] SB_dataBus_TX_SBINIT;
+wire [63:0] SB_dataBus_TX_MBINIT;
+wire [63:0] SB_dataBus_TX_MBTRAIN;
+wire [63:0] SB_dataBus_TX_LINKINIT;
+wire [63:0] SB_dataBus_TX_ACTIVE;
+wire [63:0] SB_dataBus_TX_TRAINERROR;
+
 // reset_state_timeout_counter signal sources
 wire reset_state_timeout_counter_SBINIT;
 wire reset_state_timeout_counter_MBINIT;
@@ -131,8 +139,6 @@ wire reset_state_timeout_counter_MBTRAIN;
 wire reset_state_timeout_counter_LINKINIT;
 wire reset_state_timeout_counter_ACTIVE;
 wire reset_state_timeout_counter_TRAINERROR; 
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MULTIPLEXERS //
@@ -149,14 +155,12 @@ assign SB_dataPin_TX_o  = (LT_Current_state == SBINIT) ? SB_dataPin_TX_SBINIT:
 assign MB_clkPins_o    = (LT_Current_state == RESET) ? 'z    :
                         (LT_Current_state == SBINIT) ? 'z    :
                         (LT_Current_state == MBINIT) ? MB_clkPins_TX_MBINIT :
-                        (LT_Current_state == MBTRAIN) ? MB_clkPins_TX_MBTRAIN :
-                        (LT_Current_state == LINKINIT) ? MB_clkPins_TX_LINKINIT : MB_clkPins_TX_TRANSMITTER;
+                        (LT_Current_state == MBTRAIN) ? MB_clkPins_TX_MBTRAIN : MB_clkPins_TX_TRANSMITTER;
 
 assign MB_dataPins_o    = (LT_Current_state == RESET) ? 'z    :
                         (LT_Current_state == SBINIT) ? 'z    :
                         (LT_Current_state == MBINIT) ? MB_dataPins_TX_MBINIT :
-                        (LT_Current_state == MBTRAIN) ? MB_dataPins_TX_MBTRAIN :
-                        (LT_Current_state == LINKINIT) ? MB_dataPins_TX_LINKINIT : MB_dataPins_TX_TRANSMITTER;
+                        (LT_Current_state == MBTRAIN) ? MB_dataPins_TX_MBTRAIN : MB_dataPins_TX_TRANSMITTER;
 
  assign SB_TX_valid_w = (LT_Current_state == SBINIT) ? SB_TX_valid_SBINIT :
                         (LT_Current_state == MBINIT) ? SB_TX_valid_MBINIT :
@@ -186,57 +190,53 @@ assign reset_state_timeout_counter = (LT_Current_state == SBINIT) ? reset_state_
                         (LT_Current_state == ACTIVE) ? reset_state_timeout_counter_ACTIVE :
                         (LT_Current_state == TRAINERROR) ? reset_state_timeout_counter_TRAINERROR : 1'b0;
 
+assign SB_dataBus_TX = (LT_Current_state == SBINIT) ? SB_dataBus_TX_SBINIT :
+                        (LT_Current_state == MBINIT) ? SB_dataBus_TX_MBINIT :
+                        (LT_Current_state == MBTRAIN) ? SB_dataBus_TX_MBTRAIN :
+                        (LT_Current_state == LINKINIT) ? SB_dataBus_TX_LINKINIT :
+                        (LT_Current_state == ACTIVE) ? SB_dataBus_TX_ACTIVE :
+                        (LT_Current_state == TRAINERROR) ? SB_dataBus_TX_TRAINERROR : 64'h0;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MODULE INSTANTIATIONS //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SB_TX #(
-    .buffer_size(4)
+    .fast_buffer_size(8)
 ) SB_tx_inst (
     .clk_800MHz(clk_800MHz),
+    .clk_100MHz(clk_100MHz),
     .reset(reset),
-    .data_i(SB_msg64_TX_o),
+    .SB_msg_i(SB_msg_TX),
+    .dataBus_i(SB_dataBus_TX),
     .valid_i(SB_TX_valid_flag),
     .enable_i(enable_SB_tx),
-    .data_valid_ack_o(SB_TX_valid_ack_w),
+    .send_next_flag_o(SB_TX_sendNext_w),
     .dataPin_o(SB_dataPin_TX_TRANSMITTER),
     .clkPin_o(SB_clkPin_TX_TRANSMITTER)
 );
 
-logic next_SBpacket_Is32bData; //MSB need to be padded with 0's could be done at the sender side
-logic next_SBpacket_Is64bData;
-
-always_ff @(posedge clk_100MHz or reset)begin
-    if (reset) begin
-        next_SBpacket_Is32bData <= 1'b0;
-        next_SBpacket_Is64bData <= 1'b0;
-        SB_msg64_TX_o <= '0;
-    end else begin
-        
-    end
-end
-
-
 //logic for set and async reset of SB_TX_valid_flag
 // MAYBE NOT NEEDED use if too many msgs are sent out at once
-always_ff @(reset or posedge SB_TX_valid_ack_w or posedge SB_TX_valid_w) begin
+always_ff @(reset or posedge SB_TX_sendNext_w or posedge SB_TX_valid_w) begin
     if (reset) SB_TX_valid_flag <= 1'b0;
-    else if (SB_TX_valid_ack_w) SB_TX_valid_flag <= 1'b0;
+    else if (SB_TX_sendNext_w) SB_TX_valid_flag <= 1'b0;
     else if (SB_TX_valid_w) SB_TX_valid_flag <= 1'b1;
 end
 
 // Instantiate SB_RX
 SB_RX #(
-    .buffer_size(4)
+    .slow_buffer_size(4)
 ) SB_rx_inst (
     .clk_800MHz(clk_800MHz),
     .clk_100MHz(clk_100MHz),
     .reset(reset),
     .enable_i(enable_SB_rx),
     .msg_req_i(SB_msg_req_flag),
+    .SB_msg_o(SB_msg_RX),
     .dataPin_i(SB_dataPin_RX_i), 
     .clkPin_i(SB_clkPin_RX_i),  
-    .data_o(SB_msg64_RX_i),
+    .data_o(SB_dataBus_RX),
     .valid_o(SB_msg_valid_i_w)
 );
 
@@ -456,7 +456,7 @@ end
 end
 
 //Current state update
-always_ff @(posedge clk_100MHz or posedge reset) begin
+always_ff @(posedge clk_100MHz or reset) begin
     if (reset) LT_Current_state <= RESET;
     else LT_Current_state <= LT_NEXT_state;
 end
