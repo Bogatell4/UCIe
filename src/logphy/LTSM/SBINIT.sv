@@ -25,6 +25,9 @@ module SBINIT (
     output SB_RX_msg_req_o,
     input SB_RX_msg_valid_i,
 
+    input  SBmessage_retry_timeout_flag,
+    output reset_SBmessage_retry_timeout,
+
     // SBINIT specific outputs
     output enable_SB_tx,
     output enable_SB_rx,
