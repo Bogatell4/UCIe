@@ -1,0 +1,43 @@
+[*]
+[*] GTKWave Analyzer v3.3.116 (w)1999-2023 BSI
+[*] Tue Jun 10 09:58:41 2025
+[*]
+[dumpfile] "/home/sergibogatell/.teroshdl/SBcodex_tb.vcd"
+[dumpfile_mtime] "Fri Jun  6 10:02:14 2025"
+[dumpfile_size] 76541
+[savefile] "/home/sergibogatell/repos/UCIe/tb/Sim_results/SB_codex_tb.gtkw"
+[timestart] 0
+[size] 1760 618
+[pos] -252 101
+*-17.000000 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.SB_tb.
+[treeopen] TOP.SB_tb.tx_inst.
+[sst_width] 276
+[signals_width] 182
+[sst_expanded] 1
+[sst_vpaned_height] 164
+@28
+TOP.SB_tb.clk_100MHz
+TOP.SB_tb.clk_800MHz
+@29
+TOP.SB_tb.reset
+@28
+TOP.SB_tb.enable_rx
+TOP.SB_tb.enable_tx
+TOP.SB_tb.valid_i
+@22
+TOP.SB_tb.SB_msg_i[73:0]
+TOP.SB_tb.dataBus_i[63:0]
+TOP.SB_tb.tx_inst.encoded_msg_w[63:0]
+@28
+TOP.SB_tb.tx_inst.valid_ShiftReg_flag
+TOP.SB_tb.tx_inst.data_valid_ack_o
+TOP.SB_tb.send_next_flag_o
+TOP.SB_tb.msg_req
+TOP.SB_tb.valid_o
+@22
+TOP.SB_tb.SB_msg_o[73:0]
+TOP.SB_tb.data_o[63:0]
+[pattern_trace] 1
+[pattern_trace] 0
