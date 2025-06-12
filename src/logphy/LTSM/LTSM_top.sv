@@ -9,6 +9,7 @@ input reset,
 input enable_i,
 
 input start_LT_i,
+output LTSM_active_state_o,
 
 //SB Pins
 output SB_clkPin_TX_o,
@@ -18,7 +19,11 @@ input SB_dataPin_RX_i,
 
 //MB Pins
 input [1:0] MB_clkPins_i,
+input MB_validPin_i,
+input MB_trackPin_i,
 input [15:0] MB_dataPins_i,
+output MB_TX_validPin_o,
+output MB_TX_trackPin_o,
 output [1:0] MB_clkPins_o,
 output [15:0] MB_dataPins_o
 );
@@ -28,19 +33,19 @@ output [15:0] MB_dataPins_o
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 wire SB_msg_valid_i_w;
-reg SB_msg_req_flag;
-reg SB_msg_req;
+logic SB_msg_req_flag;
+logic SB_msg_req;
 
 wire SB_TX_valid_w;
-reg SB_TX_valid_flag;
-wire SB_TX_valid_ack_w;
-reg enable_SB_tx;
-reg enable_SB_rx;
+logic SB_TX_valid_flag;
+wire SB_TX_sendNext_w;
+logic enable_SB_tx;
+logic enable_SB_rx;
 
 SB_msg_t SB_msg_RX;
 SB_msg_t SB_msg_TX;
-wire [63:0] SB_msg64_TX_o_w;
-wire [63:0] SB_msg64_RX_i_w;
+wire [63:0] SB_dataBus_TX;
+wire [63:0] SB_dataBus_RX;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Signal Sources for the muxes
@@ -53,10 +58,24 @@ wire SB_dataPin_TX_TRANSMITTER;
 // MB sources
 wire [1:0] MB_clkPins_TX_MBINIT;
 wire [15:0] MB_dataPins_TX_MBINIT;
+wire MB_validPin_TX_MBINIT;
+wire MB_trackPin_TX_MBINIT;
+
 wire [1:0] MB_clkPins_TX_MBTRAIN;
 wire [15:0] MB_dataPins_TX_MBTRAIN;
-//wire [1:0] MB_clkPins_TX_TRANSMITTER; Unused for now, use when MB modules are instantiated
-//wire [15:0] MB_dataPins_TX_TRANSMITTER;
+wire MB_validPin_TX_MBTRAIN;
+wire MB_trackPin_TX_MBTRAIN;
+
+wire [1:0] MB_clkPins_TX_LINKINIT;
+wire [15:0] MB_dataPins_TX_LINKINIT;
+wire MB_validPin_TX_LINKINIT;
+wire MB_trackPin_TX_LINKINIT;
+
+wire [1:0] MB_clkPins_TX_ACTIVE;
+wire [15:0] MB_dataPins_TX_ACTIVE;
+wire MB_validPin_TX_ACTIVE;
+wire MB_trackPin_TX_ACTIVE;
+
 
 // SB valid sources
 wire SB_TX_valid_SBINIT;
@@ -105,12 +124,15 @@ assign enable_LINKINIT = (LT_Current_state == LINKINIT);
 assign enable_TRAINERROR = (LT_Current_state == TRAINERROR);
 assign enable_ACTIVE = (LT_Current_state == ACTIVE);
 
+assign LTSM_active_state_o = (LT_Current_state == ACTIVE);
+
 // State done signals
 wire SBINIT_done;
 wire MBINIT_done;
 wire MBTRAIN_done;
 wire LINKINIT_done;
-//wire ACTIVE_done; needed? review active state or PHYRETRAIN flag?
+wire ACTIVE_done;
+wire TRAINERROR_done;
 
 // TX msg output variables for multiplexers
 SB_msg_t SB_msg_TX_SBINIT;
@@ -120,88 +142,164 @@ SB_msg_t SB_msg_TX_LINKINIT;
 SB_msg_t SB_msg_TX_ACTIVE;
 SB_msg_t SB_msg_TX_TRAINERROR;
 
+// SB TX data bus mux sources
+wire [63:0] SB_dataBus_TX_SBINIT;
+wire [63:0] SB_dataBus_TX_MBINIT;
+wire [63:0] SB_dataBus_TX_MBTRAIN;
+wire [63:0] SB_dataBus_TX_LINKINIT;
+wire [63:0] SB_dataBus_TX_ACTIVE;
+wire [63:0] SB_dataBus_TX_TRAINERROR;
+
+// reset_state_timeout_counter signal sources
+wire reset_timeout_counter_SBINIT;
+wire reset_timeout_counter_MBINIT;
+wire reset_timeout_counter_MBTRAIN;
+wire reset_timeout_counter_LINKINIT;
+wire reset_timeout_counter_ACTIVE;
+wire reset_timeout_counter_TRAINERROR; 
+
+wire enable_SB_rx_SBINIT;
+wire enable_SB_tx_SBINIT;
+wire enable_SB_rx_TRAINERROR;
+wire enable_SB_tx_TRAINERROR;
+
+wire reset_message_retry_timeout_SBINIT;
+wire reset_message_retry_timeout_MBINIT;
+wire reset_message_retry_timeout_MBTRAIN;
+wire reset_message_retry_timeout_LINKINIT;
+wire reset_message_retry_timeout_ACTIVE;
+wire reset_message_retry_timeout_TRAINERROR;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MULTIPLEXERS //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Mux logic, selecting the source depending on current state
-assign SB_clkPin_TX_o  = (LT_Current_state == SBINIT) ? SB_clkPin_TX_SBINIT:
-                        //TODOOO, when pattern is detected switch to transmiter
-                        (LT_Current_state == RESET) ? '0  : SB_clkPin_TX_TRANSMITTER;
+assign SB_clkPin_TX_o      = (LT_Current_state == RESET)      ? '0                       :
+                             (LT_Current_state == SBINIT)     ? SB_clkPin_TX_SBINIT      : SB_clkPin_TX_TRANSMITTER;
 
-assign SB_dataPin_TX_o  = (LT_Current_state == SBINIT) ? SB_dataPin_TX_SBINIT:
-                        (LT_Current_state == RESET) ? '0  : SB_dataPin_TX_TRANSMITTER;
+assign SB_dataPin_TX_o     = (LT_Current_state == RESET)      ? '0                       :
+                             (LT_Current_state == SBINIT)     ? SB_dataPin_TX_SBINIT     : SB_dataPin_TX_TRANSMITTER;
 
-assign MB_clkPins_o    = (LT_Current_state == RESET) ? 'z    :
-                        (LT_Current_state == SBINIT) ? 'z    :
-                        (LT_Current_state == MBINIT) ? MB_clkPins_TX_MBINIT :
-                        (LT_Current_state == MBTRAIN) ? MB_clkPins_TX_MBTRAIN :
-                        (LT_Current_state == LINKINIT) ? MB_clkPins_TX_LINKINIT : MB_clkPins_TX_TRANSMITTER;
+assign enable_SB_rx        = (LT_Current_state == RESET)      ? 1'b1                     :
+                             (LT_Current_state == SBINIT)     ? enable_SB_rx_SBINIT      :
+                             (LT_Current_state == TRAINERROR) ? enable_SB_rx_TRAINERROR  : 1'b1;
 
-assign MB_dataPins_o    = (LT_Current_state == RESET) ? 'z    :
-                        (LT_Current_state == SBINIT) ? 'z    :
-                        (LT_Current_state == MBINIT) ? MB_dataPins_TX_MBINIT :
-                        (LT_Current_state == MBTRAIN) ? MB_dataPins_TX_MBTRAIN :
-                        (LT_Current_state == LINKINIT) ? MB_dataPins_TX_LINKINIT : MB_dataPins_TX_TRANSMITTER;
+assign enable_SB_tx        = (LT_Current_state == RESET)      ? 1'b0                     :
+                             (LT_Current_state == SBINIT)     ? enable_SB_tx_SBINIT      : 
+                             (LT_Current_state == TRAINERROR) ? enable_SB_tx_TRAINERROR  : 1'b1;
 
- assign SB_TX_valid_w = (LT_Current_state == SBINIT) ? SB_TX_valid_SBINIT :
-                        (LT_Current_state == MBINIT) ? SB_TX_valid_MBINIT :
-                        (LT_Current_state == MBTRAIN) ? SB_TX_valid_MBTRAIN :
-                        (LT_Current_state == LINKINIT) ? SB_TX_valid_LINKINIT :
-                        (LT_Current_state == ACTIVE) ? SB_TX_valid_ACTIVE :
-                        (LT_Current_state == TRAINERROR) ? SB_TX_valid_TRAINERROR : 1'b0;
+assign MB_clkPins_o        = (LT_Current_state == RESET)      ? 'z                       :
+                             (LT_Current_state == SBINIT)     ? 'z                       :
+                             (LT_Current_state == MBINIT)     ? MB_clkPins_TX_MBINIT     :
+                             (LT_Current_state == MBTRAIN)    ? MB_clkPins_TX_MBTRAIN    : 
+                             (LT_Current_state == LINKINIT)   ? MB_clkPins_TX_LINKINIT   : MB_clkPins_TX_ACTIVE;
 
-assign SB_msg_req = (LT_Current_state == SBINIT) ? SB_RX_msgReq_SBINIT :
-                        (LT_Current_state == MBINIT) ? SB_RX_msgReq_MBINIT :
-                        (LT_Current_state == MBTRAIN) ? SB_RX_msgReq_MBTRAIN :
-                        (LT_Current_state == LINKINIT) ? SB_RX_msgReq_LINKINIT :
-                        (LT_Current_state == ACTIVE) ? SB_RX_msgReq_ACTIVE :
-                        (LT_Current_state == TRAINERROR) ? SB_RX_msgReq_TRAINERROR : 1'b0;
+assign MB_dataPins_o       = (LT_Current_state == RESET)      ? 'z                       :
+                             (LT_Current_state == SBINIT)     ? 'z                       :
+                             (LT_Current_state == MBINIT)     ? MB_dataPins_TX_MBINIT    :
+                             (LT_Current_state == MBTRAIN)    ? MB_dataPins_TX_MBTRAIN   :
+                             (LT_Current_state == LINKINIT)   ? MB_dataPins_TX_LINKINIT  : MB_dataPins_TX_ACTIVE;
 
-assign SB_msg_TX = (LT_Current_state == SBINIT) ? SB_msg_TX_SBINIT :
-                        (LT_Current_state == MBINIT) ? SB_msg_TX_MBINIT :
-                        (LT_Current_state == MBTRAIN) ? SB_msg_TX_MBTRAIN :
-                        (LT_Current_state == LINKINIT) ? SB_msg_TX_LINKINIT :
-                        (LT_Current_state == ACTIVE) ? SB_msg_TX_ACTIVE :
-                        (LT_Current_state == TRAINERROR) ? SB_msg_TX_TRAINERROR : reset_SB_msg();
+assign MB_TX_validPin_o    = (LT_Current_state == RESET)      ? 1'bz                     :
+                             (LT_Current_state == SBINIT)     ? 1'bz                     :
+                             (LT_Current_state == MBINIT)     ? MB_validPin_TX_MBINIT    :
+                             (LT_Current_state == MBTRAIN)    ? MB_validPin_TX_MBTRAIN   :
+                             (LT_Current_state == LINKINIT)   ? MB_validPin_TX_LINKINIT  : MB_validPin_TX_ACTIVE;
+
+assign MB_TX_trackPin_o    = (LT_Current_state == RESET)      ? 1'bz                     :
+                             (LT_Current_state == SBINIT)     ? 1'bz                     :
+                             (LT_Current_state == MBINIT)     ? MB_trackPin_TX_MBINIT    :
+                             (LT_Current_state == MBTRAIN)    ? MB_trackPin_TX_MBTRAIN   :
+                             (LT_Current_state == LINKINIT)   ? MB_trackPin_TX_LINKINIT  : MB_trackPin_TX_ACTIVE;
+
+assign SB_TX_valid_w       = (LT_Current_state == SBINIT)     ? SB_TX_valid_SBINIT       :
+                             (LT_Current_state == MBINIT)     ? SB_TX_valid_MBINIT       :
+                             (LT_Current_state == MBTRAIN)    ? SB_TX_valid_MBTRAIN      :
+                             (LT_Current_state == LINKINIT)   ? SB_TX_valid_LINKINIT     :
+                             (LT_Current_state == ACTIVE)     ? SB_TX_valid_ACTIVE       :
+                             (LT_Current_state == TRAINERROR) ? SB_TX_valid_TRAINERROR   : 1'b0;
+
+assign SB_msg_req          = (LT_Current_state == RESET)      ? 1'b0                     :
+                             (LT_Current_state == SBINIT)     ? SB_RX_msgReq_SBINIT      :
+                             (LT_Current_state == MBINIT)     ? SB_RX_msgReq_MBINIT      :
+                             (LT_Current_state == MBTRAIN)    ? SB_RX_msgReq_MBTRAIN     :
+                             (LT_Current_state == LINKINIT)   ? SB_RX_msgReq_LINKINIT    :
+                             (LT_Current_state == ACTIVE)     ? SB_RX_msgReq_ACTIVE      :
+                             (LT_Current_state == TRAINERROR) ? SB_RX_msgReq_TRAINERROR  : 1'b0;
+
+assign SB_msg_TX           = (LT_Current_state == RESET)      ? '0                       :
+                             (LT_Current_state == SBINIT)     ? SB_msg_TX_SBINIT         :
+                             (LT_Current_state == MBINIT)     ? SB_msg_TX_MBINIT         :
+                             (LT_Current_state == MBTRAIN)    ? SB_msg_TX_MBTRAIN        :
+                             (LT_Current_state == LINKINIT)   ? SB_msg_TX_LINKINIT       :
+                             (LT_Current_state == ACTIVE)     ? SB_msg_TX_ACTIVE         :
+                             (LT_Current_state == TRAINERROR) ? SB_msg_TX_TRAINERROR     : reset_SB_msg();
+
+assign reset_timeout_counter = (LT_Current_state == RESET)      ? 1'b1                     :
+                              (LT_Current_state == SBINIT)     ? reset_timeout_counter_SBINIT     :
+                              (LT_Current_state == MBINIT)     ? reset_timeout_counter_MBINIT     :
+                              (LT_Current_state == MBTRAIN)    ? reset_timeout_counter_MBTRAIN    :
+                              (LT_Current_state == LINKINIT)   ? reset_timeout_counter_LINKINIT   :
+                              (LT_Current_state == ACTIVE)     ? reset_timeout_counter_ACTIVE     :
+                              (LT_Current_state == TRAINERROR) ? reset_timeout_counter_TRAINERROR : 1'b0;
+
+assign SB_dataBus_TX       = (LT_Current_state == RESET)      ? '0                       :
+                             (LT_Current_state == SBINIT)     ? SB_dataBus_TX_SBINIT     :
+                             (LT_Current_state == MBINIT)     ? SB_dataBus_TX_MBINIT     :
+                             (LT_Current_state == MBTRAIN)    ? SB_dataBus_TX_MBTRAIN    :
+                             (LT_Current_state == LINKINIT)   ? SB_dataBus_TX_LINKINIT   :
+                             (LT_Current_state == ACTIVE)     ? SB_dataBus_TX_ACTIVE     :
+                             (LT_Current_state == TRAINERROR) ? SB_dataBus_TX_TRAINERROR : 64'h0;
+
+assign reset_message_retry_timeout = (LT_Current_state == RESET)      ? 1'b1                     :
+                                    (LT_Current_state == SBINIT)     ? reset_message_retry_timeout_SBINIT     :
+                                    (LT_Current_state == MBINIT)     ? reset_message_retry_timeout_MBINIT     :
+                                    (LT_Current_state == MBTRAIN)    ? reset_message_retry_timeout_MBTRAIN    :
+                                    (LT_Current_state == LINKINIT)   ? reset_message_retry_timeout_LINKINIT   :
+                                    (LT_Current_state == ACTIVE)     ? reset_message_retry_timeout_ACTIVE     :
+                                    (LT_Current_state == TRAINERROR) ? reset_message_retry_timeout_TRAINERROR : 1'b0;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MODULE INSTANTIATIONS //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SB_TX #(
-    .buffer_size(4)
+    .fast_buffer_size(8)
 ) SB_tx_inst (
     .clk_800MHz(clk_800MHz),
+    .clk_100MHz(clk_100MHz),
     .reset(reset),
-    .data_i(SB_msg64_TX_o_w),
+    .SB_msg_i(SB_msg_TX),
+    .dataBus_i(SB_dataBus_TX),
     .valid_i(SB_TX_valid_flag),
-    .enable_i(),
-    .data_valid_ack_o(SB_TX_valid_ack_w),
+    .enable_i(enable_SB_tx),
+    .send_next_flag_o(SB_TX_sendNext_w),
     .dataPin_o(SB_dataPin_TX_TRANSMITTER),
     .clkPin_o(SB_clkPin_TX_TRANSMITTER)
 );
 
 //logic for set and async reset of SB_TX_valid_flag
 // MAYBE NOT NEEDED use if too many msgs are sent out at once
-always_ff @(reset or posedge SB_TX_valid_ack_w or posedge SB_TX_valid_w) begin
+always_ff @(reset or posedge SB_TX_sendNext_w or posedge SB_TX_valid_w) begin
     if (reset) SB_TX_valid_flag <= 1'b0;
-    else if (SB_TX_valid_ack_w) SB_TX_valid_flag <= 1'b0;
+    else if (SB_TX_sendNext_w) SB_TX_valid_flag <= 1'b0;
     else if (SB_TX_valid_w) SB_TX_valid_flag <= 1'b1;
 end
 
 // Instantiate SB_RX
 SB_RX #(
-    .buffer_size(4)
+    .slow_buffer_size(4)
 ) SB_rx_inst (
     .clk_800MHz(clk_800MHz),
     .clk_100MHz(clk_100MHz),
     .reset(reset),
-    .enable_i(),
+    .enable_i(enable_SB_rx),
     .msg_req_i(SB_msg_req_flag),
+    .SB_msg_o(SB_msg_RX),
     .dataPin_i(SB_dataPin_RX_i), 
     .clkPin_i(SB_clkPin_RX_i),  
-    .data_o(SB_msg64_RX_i_w),
+    .data_o(SB_dataBus_RX),
     .valid_o(SB_msg_valid_i_w)
 );
 
@@ -219,16 +317,32 @@ SBINIT sbinit_inst (
     .clk_800MHz(clk_800MHz),
     .reset(reset),
     .enable_i(enable_SBINIT),
+    .SBINIT_done_o(SBINIT_done),
+
+    // SB Pins
     .SB_clkPin_RX_i(SB_clkPin_RX_i),
     .SB_dataPin_RX_i(SB_dataPin_RX_i),
     .SB_clkPin_TX_o(SB_clkPin_TX_SBINIT),
     .SB_dataPin_TX_o(SB_dataPin_TX_SBINIT),
-    .SBINIT_done_o(SBINIT_done),
-    .TX_msg_o(SB_msg_TX_SBINIT),
-    .TX_msg_valid_o(SB_TX_valid_SBINIT),
-    .RX_msg_i(SB_msg_RX),
-    .RX_msg_req_o(SB_RX_msgReq_SBINIT),
-    .RX_msg_valid_i(SB_msg_valid_i_w)
+
+    // SB Communication ports
+    .SB_TX_msg_o(SB_msg_TX_SBINIT),
+    .SB_TX_dataBus_o(SB_dataBus_TX_SBINIT),
+    .SB_TX_msg_valid_o(SB_TX_valid_SBINIT),
+    .SB_TX_msg_sendNextFlag_i(SB_TX_sendNext_w),
+
+    .SB_RX_msg_i(SB_msg_RX),
+    .SB_RX_dataBus_i(SB_dataBus_RX),
+    .SB_RX_msg_req_o(SB_RX_msgReq_SBINIT),
+    .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+
+    .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
+    .reset_SBmessage_retry_timeout(reset_message_retry_timeout_SBINIT),
+
+    // SBINIT specific outputs
+    .enable_SB_tx(enable_SB_tx_SBINIT),
+    .enable_SB_rx(enable_SB_rx_SBINIT),
+    .reset_state_timeout_counter_o(reset_timeout_counter_SBINIT)
 );
 
 // Instantiate MBINIT
@@ -238,16 +352,33 @@ MBINIT mbinit_inst (
     .clk_2GHz(clk_2GHz),
     .reset(reset),
     .enable_i(enable_MBINIT),
-    .MB_clkPins_RX_MBINIT_i(MB_clkPins_i),
-    .MB_dataPins_RX_MBINIT_i(MB_dataPins_i),
-    .MB_clkPins_TX_MBINIT_o(MB_clkPins_TX_MBINIT),
-    .MB_dataPins_TX_MBINIT_o(MB_dataPins_TX_MBINIT),
     .MBINIT_done_o(MBINIT_done),
-    .TX_msg_o(SB_msg_TX_MBINIT),
-    .TX_msg_valid_o(SB_TX_valid_MBINIT),
-    .RX_msg_i(SB_msg_RX),
-    .RX_msg_valid_i(SB_msg_valid_i_w),
-    .RX_msg_req_o(SB_RX_msgReq_MBINIT)
+
+    // MB Pins
+    .MB_RX_validPin_i(MB_validPin_i),
+    .MB_RX_trackPin_i(MB_trackPin_i),
+    .MB_RX_clkPins_i(MB_clkPins_i),
+    .MB_RX_dataPins_i(MB_dataPins_i),
+    .MB_TX_validPin_o(MB_validPin_TX_MBINIT),
+    .MB_TX_trackPin_o(MB_trackPin_TX_MBINIT),
+    .MB_TX_clkPins_o(MB_clkPins_TX_MBINIT),
+    .MB_TX_dataPins_o(MB_dataPins_TX_MBINIT),
+
+    // SB Communication ports
+    .SB_TX_msg_o(SB_msg_TX_MBINIT),
+    .SB_TX_dataBus_o(SB_dataBus_TX_MBINIT),
+    .SB_TX_msg_valid_o(SB_TX_valid_MBINIT),
+    .SB_TX_msg_sendNextFlag_i(SB_TX_sendNext_w),
+
+    .SB_RX_msg_i(SB_msg_RX),
+    .SB_RX_dataBus_i(SB_dataBus_RX),
+    .SB_RX_msg_req_o(SB_RX_msgReq_MBINIT),
+    .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+
+    .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
+    .reset_SBmessage_retry_timeout(reset_message_retry_timeout_MBINIT),
+
+    .reset_state_timeout_counter_o(reset_timeout_counter_MBINIT)
 );
 
 // Instantiate MBTRAIN
@@ -257,16 +388,33 @@ MBTRAIN mbtrain_inst (
     .clk_2GHz(clk_2GHz),
     .reset(reset),
     .enable_i(enable_MBTRAIN),
-    .MB_clkPins_RX_MBTRAIN_i(MB_clkPins_i),
-    .MB_dataPins_RX_MBTRAIN_i(MB_dataPins_i),
-    .MB_clkPins_TX_MBTRAIN_o(MB_clkPins_TX_MBTRAIN),
-    .MB_dataPins_TX_MBTRAIN_o(MB_dataPins_TX_MBTRAIN),
-    .MTRAIN_done_o(MBTRAIN_done),
-    .TX_msg_o(SB_msg_TX_MBINIT),
-    .TX_msg_valid_o(SB_TX_valid_MBTRAIN),
-    .RX_msg_i(SB_msg_RX),
-    .RX_msg_valid_i(SB_msg_valid_i_w),
-    .RX_msg_req_o(SB_RX_msgReq_MBTRAIN)
+    .MBTRAIN_done_o(MBTRAIN_done),
+
+    // MB Pins
+    .MB_RX_validPin_i(MB_validPin_i),
+    .MB_RX_trackPin_i(MB_trackPin_i),
+    .MB_RX_clkPins_i(MB_clkPins_i),
+    .MB_RX_dataPins_i(MB_dataPins_i),
+    .MB_TX_validPin_o(MB_validPin_TX_MBTRAIN),
+    .MB_TX_trackPin_o(MB_trackPin_TX_MBTRAIN),
+    .MB_TX_clkPins_o(MB_clkPins_TX_MBTRAIN),
+    .MB_TX_dataPins_o(MB_dataPins_TX_MBTRAIN),
+
+    // SB Communication ports
+    .SB_TX_msg_o(SB_msg_TX_MBTRAIN),
+    .SB_TX_dataBus_o(SB_dataBus_TX_MBTRAIN),
+    .SB_TX_msg_valid_o(SB_TX_valid_MBTRAIN),
+    .SB_TX_msg_sendNextFlag_i(SB_TX_sendNext_w),
+
+    .SB_RX_msg_i(SB_msg_RX),
+    .SB_RX_dataBus_i(SB_dataBus_RX),
+    .SB_RX_msg_req_o(SB_RX_msgReq_MBTRAIN),
+    .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+
+    .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
+    .reset_SBmessage_retry_timeout(reset_message_retry_timeout_MBTRAIN),
+
+    .reset_state_timeout_counter_o(reset_timeout_counter_MBTRAIN)
 );
 
 // Instantiate LINKINIT
@@ -277,11 +425,32 @@ LINKINIT linkinit_inst (
     .reset(reset),
     .enable_i(enable_LINKINIT),
     .LINKINIT_done_o(LINKINIT_done),
-    .TX_msg_o(SB_msg_TX_MBINIT),
-    .TX_msg_valid_o(SB_TX_valid_LINKINIT),
-    .RX_msg_i(SB_msg_RX),
-    .RX_msg_valid_i(SB_msg_valid_i_w),
-    .RX_msg_req_o(SB_RX_msgReq_LINKINIT)
+
+    // MB Pins
+    .MB_RX_validPin_i(MB_validPin_i),
+    .MB_RX_trackPin_i(MB_trackPin_i),
+    .MB_RX_clkPins_i(MB_clkPins_i),
+    .MB_RX_dataPins_i(MB_dataPins_i),
+    .MB_TX_validPin_o(MB_validPin_TX_LINKINIT),
+    .MB_TX_trackPin_o(MB_trackPin_TX_LINKINIT),
+    .MB_TX_clkPins_o(MB_clkPins_TX_LINKINIT),
+    .MB_TX_dataPins_o(MB_dataPins_TX_LINKINIT),
+
+    // SB Communication ports
+    .SB_TX_msg_o(SB_msg_TX_LINKINIT),
+    .SB_TX_dataBus_o(SB_dataBus_TX_LINKINIT),
+    .SB_TX_msg_valid_o(SB_TX_valid_LINKINIT),
+    .SB_TX_msg_sendNextFlag_i(SB_TX_sendNext_w),
+
+    .SB_RX_msg_i(SB_msg_RX),
+    .SB_RX_dataBus_i(SB_dataBus_RX),
+    .SB_RX_msg_req_o(SB_RX_msgReq_LINKINIT),
+    .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+
+    .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
+    .reset_SBmessage_retry_timeout(reset_message_retry_timeout_LINKINIT),
+
+    .reset_state_timeout_counter_o(reset_timeout_counter_LINKINIT)
 );
 
 // Instantiate ACTIVE
@@ -291,26 +460,61 @@ ACTIVE active_inst (
     .clk_2GHz(clk_2GHz),
     .reset(reset),
     .enable_i(enable_ACTIVE),
-    .ACTIVE_done_o(),
-    .TX_msg_o(SB_msg_TX_MBINIT),
-    .TX_msg_valid_o(SB_TX_valid_ACTIVE),
-    .RX_msg_i(SB_msg_RX),
-    .RX_msg_valid_i(SB_msg_valid_i_w),
-    .RX_msg_req_o(SB_RX_msgReq_ACTIVE)
+    .ACTIVE_done_o(ACTIVE_done),
+
+    // MB Pins
+    .MB_RX_validPin_i(MB_validPin_i),
+    .MB_RX_trackPin_i(MB_trackPin_i),
+    .MB_RX_clkPins_i(MB_clkPins_i),
+    .MB_RX_dataPins_i(MB_dataPins_i),
+    .MB_TX_validPin_o(MB_validPin_TX_ACTIVE),
+    .MB_TX_trackPin_o(MB_trackPin_TX_ACTIVE),
+    .MB_TX_clkPins_o(MB_clkPins_TX_ACTIVE),
+    .MB_TX_dataPins_o(MB_dataPins_TX_ACTIVE),
+
+    // SB Communication ports
+    .SB_TX_msg_o(SB_msg_TX_ACTIVE),
+    .SB_TX_dataBus_o(SB_dataBus_TX_ACTIVE),
+    .SB_TX_msg_valid_o(SB_TX_valid_ACTIVE),
+    .SB_TX_msg_sendNextFlag_i(SB_TX_sendNext_w),
+
+    .SB_RX_msg_i(SB_msg_RX),
+    .SB_RX_dataBus_i(SB_dataBus_RX),
+    .SB_RX_msg_req_o(SB_RX_msgReq_ACTIVE),
+    .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+
+    .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
+    .reset_SBmessage_retry_timeout(reset_message_retry_timeout_ACTIVE),
+
+    .reset_state_timeout_counter_o(reset_timeout_counter_ACTIVE)
 );
 
 TRAINERROR trainerror_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
-    .clk_2GHz(clk_2GHz),
     .reset(reset),
     .enable_i(enable_TRAINERROR),
-    .TRAINERROR_done_o(),
-    .TX_msg_o(SB_msg_TX_MBINIT),
-    .TX_msg_valid_o(SB_TX_valid_TRAINERROR),
-    .RX_msg_i(SB_msg_RX),
-    .RX_msg_valid_i(SB_msg_valid_i_w),
-    .RX_msg_req_o(SB_RX_msgReq_TRAINERROR)
+    .TRAINERROR_done_o(TRAINERROR_done),
+
+    // SB Communication ports
+    .SB_TX_msg_o(SB_msg_TX_TRAINERROR),
+    .SB_TX_dataBus_o(SB_dataBus_TX_TRAINERROR),
+    .SB_TX_msg_valid_o(SB_TX_valid_TRAINERROR),
+    .SB_TX_msg_sendNextFlag_i(SB_TX_sendNext_w),
+
+    .SB_RX_msg_i(SB_msg_RX),
+    .SB_RX_dataBus_i(SB_dataBus_RX),
+    .SB_RX_msg_req_o(SB_RX_msgReq_TRAINERROR),
+    .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+
+    .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
+    .reset_SBmessage_retry_timeout(reset_message_retry_timeout_TRAINERROR),
+
+    // SBINIT specific outputs
+    .enable_SB_tx(enable_SB_tx_TRAINERROR),
+    .enable_SB_rx(enable_SB_rx_TRAINERROR),
+
+    .reset_state_timeout_counter_o(reset_timeout_counter_TRAINERROR)
 );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -319,14 +523,9 @@ TRAINERROR trainerror_inst (
 
 //Current State logic
 always_comb begin
+    start_reset_counter = 1'b0;
     unique case (LT_Current_state)
-
         RESET: begin            // Reset all internal signals
-            SB_msg_RX = reset_SB_msg();
-            SB_msg_TX = reset_SB_msg();
-            enable_SB_rx = 1'b1;
-            enable_SB_tx = 1'b0;
-            SB_msg_req = 1'b0;
             start_reset_counter = 1'b1;
         end
 
@@ -335,22 +534,25 @@ always_comb begin
         end
 
         MBINIT: begin
-            
+
         end
 
-        MBTRAIN: begin
-            
+        MBTRAIN: begin 
         end
+
         LINKINIT: begin
-            
         end
+
         ACTIVE: begin
-            
         end
+
         TRAINERROR: begin
+
         end
+
         L1_L2: begin
         end
+
         default: begin
         end
 
@@ -360,53 +562,64 @@ end
 
 // Next state Combinational Logic
 always_comb begin
+    LT_NEXT_state = LT_Current_state;
+    reset_stateChange_timeout_counter = 1'b0;
     if (timeout_flag) begin
-        LT_NEXT_state = TRAINERROR; // If timeout, go to TRAINERROR state
+        LT_NEXT_state = TRAINERROR;
     end else begin
-    unique case (LT_Current_state)
-
-        RESET: begin
-            if (enable_i && start_LT_i && counter_reset_flag) LT_NEXT_state = SBINIT;
-            else LT_NEXT_state = LT_Current_state; // Stay in RESET state
-        end
-
-        SBINIT: begin
-            if (SBINIT_done) LT_NEXT_state = MBINIT; 
-            else LT_NEXT_state = LT_Current_state;
-        end
-
-        MBINIT: begin
-            if (MBINIT_done) LT_NEXT_state = MBTRAIN; 
-            else LT_NEXT_state = LT_Current_state;
-        end
-
-        MBTRAIN: begin
-            if (MBTRAIN_done) LT_NEXT_state = LINKINIT; 
-            else LT_NEXT_state = LT_Current_state;
-        end
-        LINKINIT: begin
-            if (LINKINIT_done) LT_NEXT_state = LINKINIT; 
-            else LT_NEXT_state = LT_Current_state;
-        end
-        ACTIVE: begin //REVIEW
-            
-        end
-        TRAINERROR: begin
-            LT_NEXT_state = RESET; //REVIEW
-        end
-        L1_L2: begin //REVIEW
-        end
-        default: LT_NEXT_state = RESET;
-    endcase
-end
+        unique case (LT_Current_state)
+            RESET: begin
+                if (enable_i && start_LT_i && counter_reset_flag) begin
+                    LT_NEXT_state = SBINIT;
+                    reset_stateChange_timeout_counter = 1'b1;
+                end
+            end
+            SBINIT: begin
+                if (SBINIT_done) begin
+                    LT_NEXT_state = MBINIT;
+                    reset_stateChange_timeout_counter = 1'b1;
+                end
+            end
+            MBINIT: begin
+                if (MBINIT_done) begin
+                    LT_NEXT_state = MBTRAIN;
+                    reset_stateChange_timeout_counter = 1'b1;
+                end
+            end
+            MBTRAIN: begin 
+                if (MBTRAIN_done) begin
+                    LT_NEXT_state = LINKINIT;
+                    reset_stateChange_timeout_counter = 1'b1;
+                end
+            end
+            LINKINIT: begin
+                if (LINKINIT_done) begin
+                    LT_NEXT_state = ACTIVE;
+                    reset_stateChange_timeout_counter = 1'b1;
+                end
+            end
+            ACTIVE: begin
+            end
+            TRAINERROR: begin
+                if (TRAINERROR_done) begin
+                    LT_NEXT_state = RESET;
+                    reset_stateChange_timeout_counter = 1'b1;
+                end
+            end
+            L1_L2: begin
+            end
+            default: begin
+                LT_NEXT_state = RESET;
+            end
+        endcase
+    end
 end
 
 //Current state update
-always_ff @(posedge clk_100MHz or posedge reset) begin
+always_ff @(posedge clk_100MHz or reset) begin
     if (reset) LT_Current_state <= RESET;
     else LT_Current_state <= LT_NEXT_state;
 end
-
 
 // 4ms counter for 100MHz clock,
 // always need to stay 4ms when entering RESET state, modify this value if needed
@@ -425,33 +638,36 @@ always_ff @(posedge clk_100MHz or reset) begin
 end
 
 // 8ms counter for 100MHz clock, Timeout
-// always need to stay 4ms when entering RESET state, modify this value if needed
 reg [19:0] timeout_counter; // 19 bits are enough for 800,000
 wire timeout_flag = (timeout_counter == 20'd799_999); // 8ms counter timeout flag
 logic reset_timeout_counter; // used to reset timout counter for other states if needed
-logic reset_state_timeout_counter;
+logic reset_stateChange_timeout_counter;
 
 always @ (posedge clk_100MHz or reset) begin
     if (reset) begin
         timeout_counter <= 0;
     end else if (reset_timeout_counter) begin 
         timeout_counter <= 0;     
-    end else if (reset_state_timeout_counter) begin
+    end else if (reset_stateChange_timeout_counter) begin
         timeout_counter <= 0;
     end else if (LT_Current_state == LT_NEXT_state) begin
         timeout_counter <= timeout_counter + 1;
     end
 end
 
-//This states don't have a timeout condition
-always_comb begin
-    if (LT_Current_state == RESET ||
-        LT_Current_state == ACTIVE ||
-        LT_Current_state == L1_L2 ||
-        LT_Current_state == TRAINERROR) begin
-        reset_state_timeout_counter = 1'b1;
-        end
-    else reset_state_timeout_counter = 1'b0;
+// 1us counter for 100MHz clock, Message Retry Timeout
+reg [6:0] message_retry_counter; // 7 bits are enough for 100 counts (1us at 100MHz)
+wire message_retry_timeout_flag = (message_retry_counter == 7'd99); // 1us timeout flag
+logic reset_message_retry_timeout; // used to reset the retry timeout counter
+
+always_ff @(posedge clk_100MHz or reset) begin
+    if (reset) begin
+        message_retry_counter <= 0;
+    end else if (reset_message_retry_timeout) begin
+        message_retry_counter <= 0;
+    end else begin
+        message_retry_counter <= message_retry_counter + 1;
+    end
 end
 
 endmodule

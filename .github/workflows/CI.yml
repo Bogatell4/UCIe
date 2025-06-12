@@ -32,25 +32,25 @@ jobs:
         
     - name: Generate filelist
       run: |
-        find . -name "*.sv" > All_SV_filesList.f
-        cat All_SV_filesList.f
+        find . -name "*.sv" -o -name "*.vh" > All_filesList.f
+        cat All_filesList.f
 
     - name: Lint all files
-      run: verilator --lint-only -f All_SV_filesList.f --timing -Wno-MULTITOP -I/src/logphy -I/tb/logphy
+      run: verilator --lint-only -f All_filesList.f --timing -Wno-MULTITOP -I./src/logphy -I./tb/logphy -I./src/logphy/LTSM
         
     - name: MB_RX test
       run: |
-        verilator -I/tb/logphy -I/src/logphy --binary -f All_SV_filesList.f --top-module MB_RX_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ps/1ps 
+        verilator -I./tb/logphy -I./src/logphy -I./src/logphy/LTSM --binary -f All_filesList.f --top-module MB_RX_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ps/1ps 
         ./obj_dir/VMB_RX_tb
 
     - name: MB RX-to-TX test
       run: |
-        verilator -I/tb/logphy -I/src/logphy --binary -f All_SV_filesList.f --top-module MB_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ps/1ps 
+        verilator -I./tb/logphy -I./src/logphy -I./src/logphy/LTSM --binary -f All_filesList.f --top-module MB_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ps/1ps 
         ./obj_dir/VMB_tb
 
     - name: Sideband TX-RX test
       run: |
-        verilator -I/tb/logphy -I/src/logphy --binary -f All_SV_filesList.f --top-module SB_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ns/1ps 
+        verilator -I./tb/logphy -I./src/logphy -I./src/logphy/LTSM --binary -f All_filesList.f --top-module SB_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ns/1ps 
         ./obj_dir/VSB_tb
 
     # - name: Multiply test
