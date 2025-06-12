@@ -176,9 +176,11 @@ wire reset_message_retry_timeout_TRAINERROR;
 
 // Mux logic, selecting the source depending on current state
 assign SB_clkPin_TX_o      = (LT_Current_state == RESET)      ? '0                       :
+                             (enable_SB_tx_SBINIT == 1'b1) ?  SB_clkPin_TX_TRANSMITTER :
                              (LT_Current_state == SBINIT)     ? SB_clkPin_TX_SBINIT      : SB_clkPin_TX_TRANSMITTER;
 
 assign SB_dataPin_TX_o     = (LT_Current_state == RESET)      ? '0                       :
+                             (enable_SB_tx_SBINIT == 1'b1) ?  SB_dataPin_TX_TRANSMITTER :
                              (LT_Current_state == SBINIT)     ? SB_dataPin_TX_SBINIT     : SB_dataPin_TX_TRANSMITTER;
 
 assign enable_SB_rx        = (LT_Current_state == RESET)      ? 1'b1                     :
@@ -258,7 +260,7 @@ assign reset_message_retry_timeout = (LT_Current_state == RESET)      ? 1'b1    
                                     (LT_Current_state == MBTRAIN)    ? reset_message_retry_timeout_MBTRAIN    :
                                     (LT_Current_state == LINKINIT)   ? reset_message_retry_timeout_LINKINIT   :
                                     (LT_Current_state == ACTIVE)     ? reset_message_retry_timeout_ACTIVE     :
-                                    (LT_Current_state == TRAINERROR) ? reset_message_retry_timeout_TRAINERROR : 1'b0;
+                                    (LT_Current_state == TRAINERROR) ? reset_message_retry_timeout_TRAINERROR : 1'b1;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MODULE INSTANTIATIONS //
@@ -559,8 +561,8 @@ always_comb begin
     endcase
 end
 
-
 // Next state Combinational Logic
+// TODO: separately reset each state when entering. Create separate reset signals.
 always_comb begin
     LT_NEXT_state = LT_Current_state;
     reset_stateChange_timeout_counter = 1'b0;
@@ -656,6 +658,8 @@ always @ (posedge clk_100MHz or reset) begin
 end
 
 // 1us counter for 100MHz clock, Message Retry Timeout
+// Will be used on all modules with SB communication, the 1us is chosen as a reasonable timeout
+// based on simulation latency for SB messages. Like message windows more or less.
 reg [6:0] message_retry_counter; // 7 bits are enough for 100 counts (1us at 100MHz)
 wire message_retry_timeout_flag = (message_retry_counter == 7'd99); // 1us timeout flag
 logic reset_message_retry_timeout; // used to reset the retry timeout counter

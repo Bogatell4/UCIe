@@ -114,7 +114,7 @@ module SB_tb;
         // Example 4: 64b Register Write (unchanged)
         test_msgs[3] = reset_SB_msg();
         test_msgs[3].opcode = MemWrite_64b;
-        test_msgs[3].srcid = D2D_Adapter_src;
+        test_msgs[3].srcid = D2D_Adapter;
         test_msgs[3].dstid = D2D_Adapter_dst;
         test_msgs[3].tag = 5'd7;
         test_msgs[3].be = 8'h0F;
