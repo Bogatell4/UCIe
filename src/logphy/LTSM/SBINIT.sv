@@ -120,32 +120,30 @@ end
 // Combinational deciding the next SB message
 always_comb begin
     Next_msg = reset_SB_msg();
-    if (make_decision != 2'd0) begin
-        if (SBINIT_state == OutOfReset) begin
-            Next_msg.msg_num = SBINIT_out_of_reset;
-            Next_msg.opcode = Message_without_Data;
-            Next_msg.srcid = D2D_Adapter;
-            Next_msg.dstid = Physical_Layer;
-            Next_msg.cp = 1'b0;
-            Next_msg.dp = 1'b0;
-            Next_msg.msg_info = '0;
-        end else if (SBINIT_state == SBINIT_done && recieved_SBINIT_done_req) begin
-            Next_msg.msg_num = SBINIT_done_resp;
-            Next_msg.opcode = Message_without_Data;
-            Next_msg.srcid = D2D_Adapter;
-            Next_msg.dstid = Physical_Layer;
-            Next_msg.cp = 1'b0;
-            Next_msg.dp = 1'b0;
-            Next_msg.msg_info = '0;
-        end else if (SBINIT_state == SBINIT_done) begin
-            Next_msg.msg_num = SBINIT_done_req;
-            Next_msg.opcode = Message_without_Data;
-            Next_msg.srcid = D2D_Adapter;
-            Next_msg.dstid = Physical_Layer;
-            Next_msg.cp = 1'b0;
-            Next_msg.dp = 1'b0;
-            Next_msg.msg_info = '0;
-        end
+    if (SBINIT_state == OutOfReset) begin
+        Next_msg.msg_num = SBINIT_out_of_reset;
+        Next_msg.opcode = Message_without_Data;
+        Next_msg.srcid = D2D_Adapter;
+        Next_msg.dstid = Physical_Layer;
+        Next_msg.cp = 1'b0;
+        Next_msg.dp = 1'b0;
+        Next_msg.msg_info = '0;
+    end else if (SBINIT_state == SBINIT_done && recieved_SBINIT_done_req) begin
+        Next_msg.msg_num = SBINIT_done_resp;
+        Next_msg.opcode = Message_without_Data;
+        Next_msg.srcid = D2D_Adapter;
+        Next_msg.dstid = Physical_Layer;
+        Next_msg.cp = 1'b0;
+        Next_msg.dp = 1'b0;
+        Next_msg.msg_info = '0;
+    end else if (SBINIT_state == SBINIT_done) begin
+        Next_msg.msg_num = SBINIT_done_req;
+        Next_msg.opcode = Message_without_Data;
+        Next_msg.srcid = D2D_Adapter;
+        Next_msg.dstid = Physical_Layer;
+        Next_msg.cp = 1'b0;
+        Next_msg.dp = 1'b0;
+        Next_msg.msg_info = '0;
     end
 end
 

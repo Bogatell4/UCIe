@@ -626,7 +626,9 @@ end
 // 4ms counter for 100MHz clock,
 // always need to stay 4ms when entering RESET state, modify this value if needed
 reg [18:0] reset_counter; // 19 bits are enough for 400,000
-wire counter_reset_flag = (reset_counter == 19'd399_999); // 4ms counter reset flag
+// flag works, reduced on purpose to shorten simulation time, uncomment line below to establish 4ms out of reset time.
+//wire counter_reset_flag = (reset_counter == 19'd399_999); // 4ms counter reset flag
+wire counter_reset_flag = (reset_counter == 19'd99);
 logic start_reset_counter;
 
 always_ff @(posedge clk_100MHz or reset) begin

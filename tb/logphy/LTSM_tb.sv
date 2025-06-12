@@ -85,7 +85,8 @@ module LTSM_tb;
     // Clock generation
     always #5 clk_100MHz <= ~clk_100MHz;   // 100MHz
     always #0.625 clk_800MHz <= ~clk_800MHz; // 800MHz
-    always #0.25 clk_2GHz <= ~clk_2GHz;   // 2GHz
+    //always #0.25 clk_2GHz <= ~clk_2GHz;   // 2GHz Not used for now
+    assign clk_2GHz = 0; // Disable 2GHz clock for now
 
     // Trace options and simulation finish
     initial begin
@@ -102,15 +103,13 @@ module LTSM_tb;
         reset = 0;
         #50;
         start_LT_i = 1;
-        #20;
-        start_LT_i = 0;
         #10_000_000; // 10ms at 1ns resolution
         $display("Simulation finished at 10ms.");
         $finish;
     end
 
     // Monitor state changes and counters for both DUTs
-    initial begin
+    /*initial begin
         $display("Time\tDUT0_State\tDUT1_State\tDUT0_Active\tDUT1_Active");
         forever begin
             @(posedge clk_100MHz);
@@ -122,6 +121,6 @@ module LTSM_tb;
                 LTSM_active_state_o_1
             );
         end
-    end
+    end*/
 
 endmodule
