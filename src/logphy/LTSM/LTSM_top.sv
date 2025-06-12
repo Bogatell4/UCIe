@@ -274,7 +274,7 @@ SB_TX #(
     .reset(reset),
     .SB_msg_i(SB_msg_TX),
     .dataBus_i(SB_dataBus_TX),
-    .valid_i(SB_TX_valid_flag),
+    .valid_i(SB_TX_valid_w),
     .enable_i(enable_SB_tx),
     .send_next_flag_o(SB_TX_sendNext_w),
     .dataPin_o(SB_dataPin_TX_TRANSMITTER),
@@ -283,11 +283,11 @@ SB_TX #(
 
 //logic for set and async reset of SB_TX_valid_flag
 // MAYBE NOT NEEDED use if too many msgs are sent out at once
-always_ff @(reset or posedge SB_TX_sendNext_w or posedge SB_TX_valid_w) begin
+/*always_ff @(reset or posedge SB_TX_sendNext_w or posedge SB_TX_valid_w) begin
     if (reset) SB_TX_valid_flag <= 1'b0;
     else if (SB_TX_sendNext_w) SB_TX_valid_flag <= 1'b0;
     else if (SB_TX_valid_w) SB_TX_valid_flag <= 1'b1;
-end
+end*/
 
 // Instantiate SB_RX
 SB_RX #(
@@ -297,7 +297,7 @@ SB_RX #(
     .clk_100MHz(clk_100MHz),
     .reset(reset),
     .enable_i(enable_SB_rx),
-    .msg_req_i(SB_msg_req_flag),
+    .msg_req_i(SB_msg_req),
     .SB_msg_o(SB_msg_RX),
     .dataPin_i(SB_dataPin_RX_i), 
     .clkPin_i(SB_clkPin_RX_i),  
@@ -307,11 +307,11 @@ SB_RX #(
 
 //logic for set and async reset of SB_msg_req_flag
 // MAYBE NOT NEEDED use if too many msgs come out at once
-always_ff @(reset or posedge SB_msg_valid_i_w or posedge SB_msg_req) begin
+/*always_ff @(reset or posedge SB_msg_valid_i_w or posedge SB_msg_req) begin
     if (reset) SB_msg_req_flag <= 1'b0;
     else if (SB_msg_valid_i_w) SB_msg_req_flag <= 1'b0;
     else if (SB_msg_req) SB_msg_req_flag <= 1'b1;
-end
+end*/
 
 // Instantiate SBINIT
 SBINIT sbinit_inst (
