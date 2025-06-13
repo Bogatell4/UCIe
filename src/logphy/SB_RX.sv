@@ -15,7 +15,8 @@ module SB_RX #(
 
     output logic [63:0] data_o,
     output SB_msg_t SB_msg_o, // Sideband message output 
-    output logic valid_o        
+    output logic valid_o,
+    output logic msg_available_o        
 );
 
     reg [63:0] buffer [slow_buffer_size-1:0];
@@ -37,7 +38,7 @@ module SB_RX #(
             shift_reg <= 64'd0;
             bit_cnt <= 6'd0;
             msg_valid <= 1'b0;
-        end else if (enable_i) begin
+        end else if (enable_i && reset==1'b0) begin
             bit_cnt <= bit_cnt + 1;
             shift_reg <= {dataPin_i, shift_reg[63:1]};
             msg_valid <= 1'b0;
@@ -107,7 +108,10 @@ module SB_RX #(
             valid_o <= 1'b0;
             expect_32b_data_r <= 1'b0;
             expect_64b_data_r <= 1'b0;
-        end else if (enable_i) begin
+            msg_available_o <= 1'b0;
+        end else if (enable_i) begin 
+            if (read_index != write_index) msg_available_o <= 1'b1;
+            else msg_available_o <= 1'b0;
             if ((read_index != write_index) && msg_req_i )begin
                 if (expect_32b_data_r) begin
                     data_o <= {32'd0, buffer[read_index][31:0]};

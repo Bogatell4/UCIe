@@ -24,6 +24,7 @@ module SB_tb;
     // RX signals
     wire [63:0] data_o;
     SB_msg_t    SB_msg_o;
+    wire msg_available_o; 
     wire        valid_o;
     reg         enable_rx;
     reg         msg_req;
@@ -62,6 +63,7 @@ module SB_tb;
         .clkPin_i(clkPin_conn),
         .data_o(data_o),
         .SB_msg_o(SB_msg_o),
+        .msg_available_o(msg_available_o), 
         .valid_o(valid_o)
     );
 
@@ -114,7 +116,7 @@ module SB_tb;
         // Example 4: 64b Register Write (unchanged)
         test_msgs[3] = reset_SB_msg();
         test_msgs[3].opcode = MemWrite_64b;
-        test_msgs[3].srcid = D2D_Adapter_src;
+        test_msgs[3].srcid = D2D_Adapter;
         test_msgs[3].dstid = D2D_Adapter_dst;
         test_msgs[3].tag = 5'd7;
         test_msgs[3].be = 8'h0F;

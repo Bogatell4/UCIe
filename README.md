@@ -7,7 +7,7 @@ Aiming for standard package 16 lanes with the following functionalities (for now
 - :yellow_circle: Link state management
     - :green_circle: SB encode/decode
     - :green_circle: LTSM + Empty frames for each state
-    - :yellow_circle: SBINIT
+    - :green_circle: SBINIT
     - :yellow_circle: MBINIT
     - :red_circle: MBTRAIN
     - :red_circle: LINKINIT

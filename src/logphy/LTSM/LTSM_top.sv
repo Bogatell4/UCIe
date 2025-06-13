@@ -33,11 +33,10 @@ output [15:0] MB_dataPins_o
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 wire SB_msg_valid_i_w;
-logic SB_msg_req_flag;
+wire SB_msg_available_i_w;
 logic SB_msg_req;
 
 wire SB_TX_valid_w;
-logic SB_TX_valid_flag;
 wire SB_TX_sendNext_w;
 logic enable_SB_tx;
 logic enable_SB_rx;
@@ -126,6 +125,21 @@ assign enable_ACTIVE = (LT_Current_state == ACTIVE);
 
 assign LTSM_active_state_o = (LT_Current_state == ACTIVE);
 
+//reset state signals
+logic reset_SBINIT;
+logic reset_MBINIT;
+logic reset_MBTRAIN;
+logic reset_LINKINIT;
+logic reset_ACTIVE;
+logic reset_TRAINERROR;
+
+assign reset_SBINIT      = reset | (LT_Current_state != SBINIT);
+assign reset_MBINIT      = reset | (LT_Current_state != MBINIT);
+assign reset_MBTRAIN     = reset | (LT_Current_state != MBTRAIN);
+assign reset_LINKINIT    = reset | (LT_Current_state != LINKINIT);
+assign reset_ACTIVE      = reset | (LT_Current_state != ACTIVE);
+assign reset_TRAINERROR  = reset | (LT_Current_state != TRAINERROR);
+
 // State done signals
 wire SBINIT_done;
 wire MBINIT_done;
@@ -176,12 +190,14 @@ wire reset_message_retry_timeout_TRAINERROR;
 
 // Mux logic, selecting the source depending on current state
 assign SB_clkPin_TX_o      = (LT_Current_state == RESET)      ? '0                       :
+                             (enable_SB_tx_SBINIT == 1'b1) ?  SB_clkPin_TX_TRANSMITTER :
                              (LT_Current_state == SBINIT)     ? SB_clkPin_TX_SBINIT      : SB_clkPin_TX_TRANSMITTER;
 
 assign SB_dataPin_TX_o     = (LT_Current_state == RESET)      ? '0                       :
+                             (enable_SB_tx_SBINIT == 1'b1) ?  SB_dataPin_TX_TRANSMITTER :
                              (LT_Current_state == SBINIT)     ? SB_dataPin_TX_SBINIT     : SB_dataPin_TX_TRANSMITTER;
 
-assign enable_SB_rx        = (LT_Current_state == RESET)      ? 1'b1                     :
+assign enable_SB_rx        = (LT_Current_state == RESET)      ? 1'b0                     :
                              (LT_Current_state == SBINIT)     ? enable_SB_rx_SBINIT      :
                              (LT_Current_state == TRAINERROR) ? enable_SB_rx_TRAINERROR  : 1'b1;
 
@@ -258,7 +274,7 @@ assign reset_message_retry_timeout = (LT_Current_state == RESET)      ? 1'b1    
                                     (LT_Current_state == MBTRAIN)    ? reset_message_retry_timeout_MBTRAIN    :
                                     (LT_Current_state == LINKINIT)   ? reset_message_retry_timeout_LINKINIT   :
                                     (LT_Current_state == ACTIVE)     ? reset_message_retry_timeout_ACTIVE     :
-                                    (LT_Current_state == TRAINERROR) ? reset_message_retry_timeout_TRAINERROR : 1'b0;
+                                    (LT_Current_state == TRAINERROR) ? reset_message_retry_timeout_TRAINERROR : 1'b1;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MODULE INSTANTIATIONS //
@@ -272,22 +288,13 @@ SB_TX #(
     .reset(reset),
     .SB_msg_i(SB_msg_TX),
     .dataBus_i(SB_dataBus_TX),
-    .valid_i(SB_TX_valid_flag),
+    .valid_i(SB_TX_valid_w),
     .enable_i(enable_SB_tx),
     .send_next_flag_o(SB_TX_sendNext_w),
     .dataPin_o(SB_dataPin_TX_TRANSMITTER),
     .clkPin_o(SB_clkPin_TX_TRANSMITTER)
 );
 
-//logic for set and async reset of SB_TX_valid_flag
-// MAYBE NOT NEEDED use if too many msgs are sent out at once
-always_ff @(reset or posedge SB_TX_sendNext_w or posedge SB_TX_valid_w) begin
-    if (reset) SB_TX_valid_flag <= 1'b0;
-    else if (SB_TX_sendNext_w) SB_TX_valid_flag <= 1'b0;
-    else if (SB_TX_valid_w) SB_TX_valid_flag <= 1'b1;
-end
-
-// Instantiate SB_RX
 SB_RX #(
     .slow_buffer_size(4)
 ) SB_rx_inst (
@@ -295,27 +302,20 @@ SB_RX #(
     .clk_100MHz(clk_100MHz),
     .reset(reset),
     .enable_i(enable_SB_rx),
-    .msg_req_i(SB_msg_req_flag),
+    .msg_req_i(SB_msg_req),
     .SB_msg_o(SB_msg_RX),
+    .msg_available_o(SB_msg_available_i_w),
     .dataPin_i(SB_dataPin_RX_i), 
     .clkPin_i(SB_clkPin_RX_i),  
     .data_o(SB_dataBus_RX),
     .valid_o(SB_msg_valid_i_w)
 );
 
-//logic for set and async reset of SB_msg_req_flag
-// MAYBE NOT NEEDED use if too many msgs come out at once
-always_ff @(reset or posedge SB_msg_valid_i_w or posedge SB_msg_req) begin
-    if (reset) SB_msg_req_flag <= 1'b0;
-    else if (SB_msg_valid_i_w) SB_msg_req_flag <= 1'b0;
-    else if (SB_msg_req) SB_msg_req_flag <= 1'b1;
-end
-
 // Instantiate SBINIT
 SBINIT sbinit_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
-    .reset(reset),
+    .reset(reset_SBINIT),
     .enable_i(enable_SBINIT),
     .SBINIT_done_o(SBINIT_done),
 
@@ -335,6 +335,7 @@ SBINIT sbinit_inst (
     .SB_RX_dataBus_i(SB_dataBus_RX),
     .SB_RX_msg_req_o(SB_RX_msgReq_SBINIT),
     .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+    .SB_RX_msg_available_i(SB_msg_available_i_w),
 
     .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
     .reset_SBmessage_retry_timeout(reset_message_retry_timeout_SBINIT),
@@ -350,7 +351,7 @@ MBINIT mbinit_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
     .clk_2GHz(clk_2GHz),
-    .reset(reset),
+    .reset(reset_MBINIT),
     .enable_i(enable_MBINIT),
     .MBINIT_done_o(MBINIT_done),
 
@@ -386,7 +387,7 @@ MBTRAIN mbtrain_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
     .clk_2GHz(clk_2GHz),
-    .reset(reset),
+    .reset(reset_MBTRAIN),
     .enable_i(enable_MBTRAIN),
     .MBTRAIN_done_o(MBTRAIN_done),
 
@@ -422,7 +423,7 @@ LINKINIT linkinit_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
     .clk_2GHz(clk_2GHz),
-    .reset(reset),
+    .reset(reset_LINKINIT),
     .enable_i(enable_LINKINIT),
     .LINKINIT_done_o(LINKINIT_done),
 
@@ -458,7 +459,7 @@ ACTIVE active_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
     .clk_2GHz(clk_2GHz),
-    .reset(reset),
+    .reset(reset_ACTIVE),
     .enable_i(enable_ACTIVE),
     .ACTIVE_done_o(ACTIVE_done),
 
@@ -492,7 +493,7 @@ ACTIVE active_inst (
 TRAINERROR trainerror_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
-    .reset(reset),
+    .reset(reset_TRAINERROR),
     .enable_i(enable_TRAINERROR),
     .TRAINERROR_done_o(TRAINERROR_done),
 
@@ -559,8 +560,8 @@ always_comb begin
     endcase
 end
 
-
 // Next state Combinational Logic
+// TODO: separately reset each state when entering. Create separate reset signals.
 always_comb begin
     LT_NEXT_state = LT_Current_state;
     reset_stateChange_timeout_counter = 1'b0;
@@ -624,7 +625,9 @@ end
 // 4ms counter for 100MHz clock,
 // always need to stay 4ms when entering RESET state, modify this value if needed
 reg [18:0] reset_counter; // 19 bits are enough for 400,000
-wire counter_reset_flag = (reset_counter == 19'd399_999); // 4ms counter reset flag
+// flag works, reduced on purpose to shorten simulation time, uncomment line below to establish 4ms out of reset time.
+//wire counter_reset_flag = (reset_counter == 19'd399_999); // 4ms counter reset flag
+wire counter_reset_flag = (reset_counter == 19'd99);
 logic start_reset_counter;
 
 always_ff @(posedge clk_100MHz or reset) begin
@@ -656,6 +659,8 @@ always @ (posedge clk_100MHz or reset) begin
 end
 
 // 1us counter for 100MHz clock, Message Retry Timeout
+// Will be used on all modules with SB communication, the 1us is chosen as a reasonable timeout
+// based on simulation latency for SB messages. Like message windows more or less.
 reg [6:0] message_retry_counter; // 7 bits are enough for 100 counts (1us at 100MHz)
 wire message_retry_timeout_flag = (message_retry_counter == 7'd99); // 1us timeout flag
 logic reset_message_retry_timeout; // used to reset the retry timeout counter
