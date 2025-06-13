@@ -89,7 +89,7 @@ end
 
 
 // Process recieved messages
-always_ff @(negedge clk_100MHz or reset) begin
+always_ff @(posedge clk_100MHz or reset) begin
     if (reset) begin
         SB_RX_msg_req_o <= 1'b0;
         make_decision <= 2'd0;
@@ -97,7 +97,6 @@ always_ff @(negedge clk_100MHz or reset) begin
         reset_SBmessage_retry_timeout <= 1'b0;
         trigger_SB_TX <= 1'b0; 
     end else if (enable_i) begin
-        if (SB_TX_msg_valid_o) trigger_SB_TX <= 1'b0; 
         if (SB_RX_msg_valid_i) begin
             reset_SBmessage_retry_timeout <= 1'b1; 
             decision_done <= 1'b0; 
@@ -115,12 +114,12 @@ always_ff @(negedge clk_100MHz or reset) begin
             trigger_SB_TX <= 1'b1; //trigger TX after decision is made
             make_decision <= 2'd0; // reset decision after 2 cycle
             reset_SBmessage_retry_timeout <= 1'b0; 
-        end
+        end else if (make_decision == 2'd0) trigger_SB_TX <= 1'b0; 
     end
 end
 
 // Input message detection
-always_ff @(negedge clk_100MHz or reset) begin
+always_ff @(posedge clk_100MHz or reset) begin
     if (reset) begin
         recieved_OutofReset <= 1'b0;
         recieved_SBINIT_done_req <= 1'b0;
@@ -202,7 +201,7 @@ always_ff @(posedge clk_100MHz or reset) begin
     if (reset) begin
         Stored_SBmsg <= reset_SB_msg();
     end else if (enable_i) begin
-        if (make_decision == 2'd1) begin
+        if (make_decision == 2'd2) begin
             Stored_SBmsg <= Next_msg;
         end
     end
