@@ -33,6 +33,7 @@ output [15:0] MB_dataPins_o
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 wire SB_msg_valid_i_w;
+wire SB_msg_available_i_w;
 logic SB_msg_req_flag;
 logic SB_msg_req;
 
@@ -299,6 +300,7 @@ SB_RX #(
     .enable_i(enable_SB_rx),
     .msg_req_i(SB_msg_req),
     .SB_msg_o(SB_msg_RX),
+    .msg_available_o(SB_msg_available_i_w),
     .dataPin_i(SB_dataPin_RX_i), 
     .clkPin_i(SB_clkPin_RX_i),  
     .data_o(SB_dataBus_RX),
@@ -337,6 +339,7 @@ SBINIT sbinit_inst (
     .SB_RX_dataBus_i(SB_dataBus_RX),
     .SB_RX_msg_req_o(SB_RX_msgReq_SBINIT),
     .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+    .SB_RX_msg_available_i(SB_msg_available_i_w),
 
     .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
     .reset_SBmessage_retry_timeout(reset_message_retry_timeout_SBINIT),

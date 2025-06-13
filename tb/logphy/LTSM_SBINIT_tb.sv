@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 `include "LTSM/SB_codex_pkg.vh"
 
-module LTSM_tb;
+module LTSM_SBINIT_tb;
 
     // Clocks and reset
     reg clk_100MHz = 0;
@@ -90,8 +90,8 @@ module LTSM_tb;
 
     // Trace options and simulation finish
     initial begin
-        $dumpfile("../LTSM_tb.vcd");
-        $dumpvars(0, LTSM_tb);
+        $dumpfile("../LTSM_SBINIT_tb.vcd");
+        $dumpvars(0, LTSM_SBINIT_tb);
         $display("Tracing enabled. Simulation will finish at 10ms.");
     end
 
@@ -103,8 +103,16 @@ module LTSM_tb;
         reset = 0;
         #50;
         start_LT_i = 1;
-        #10_000_000; // 10ms at 1ns resolution
-        $display("Simulation finished at 10ms.");
+        #10_000; // 10us at 1ns resolution
+
+        // Check SBINIT_done for both DUTs
+        if (dut0.SBINIT_done && dut1.SBINIT_done) begin
+            $display("TEST SUCCESSFUL: SBINIT_done is 1 for both DUTs at end of simulation.");
+        end else begin
+            $error("TEST FAILED: SBINIT_done is not 1 for both DUTs at end of simulation. dut0.SBINIT_done=%0b, dut1.SBINIT_done=%0b", dut0.SBINIT_done, dut1.SBINIT_done);
+        end
+
+        $display("Simulation finished at 10us.");
         $finish;
     end
 

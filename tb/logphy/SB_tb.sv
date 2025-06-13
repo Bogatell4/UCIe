@@ -24,6 +24,7 @@ module SB_tb;
     // RX signals
     wire [63:0] data_o;
     SB_msg_t    SB_msg_o;
+    wire msg_available_o; 
     wire        valid_o;
     reg         enable_rx;
     reg         msg_req;
@@ -62,6 +63,7 @@ module SB_tb;
         .clkPin_i(clkPin_conn),
         .data_o(data_o),
         .SB_msg_o(SB_msg_o),
+        .msg_available_o(msg_available_o), 
         .valid_o(valid_o)
     );
 

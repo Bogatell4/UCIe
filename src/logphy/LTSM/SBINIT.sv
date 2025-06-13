@@ -24,6 +24,7 @@ module SBINIT (
     input [63:0] SB_RX_dataBus_i,
     output logic SB_RX_msg_req_o,
     input SB_RX_msg_valid_i,
+    input SB_RX_msg_available_i,
 
     input  SBmessage_retry_timeout_flag,
     output reset_SBmessage_retry_timeout,
@@ -41,14 +42,13 @@ typedef enum logic{
 } SBINIT_state_t;
 
 assign SB_TX_dataBus_o = '0; // No data bus used in SBINIT
-assign reset_SBmessage_retry_timeout = 1'b0; 
 assign enable_SB_tx = 1'b1; 
 assign enable_SB_rx = 1'b1; 
 
 
 logic [1:0] make_decision;
-logic valid_out_flag;
-logic reset_valid_out_flag;
+logic trigger_SB_TX;
+logic decision_done;
 
 logic recieved_OutofReset;
 logic recieved_SBINIT_done_req;
@@ -64,29 +64,57 @@ logic reset_state_timeout_counter_r;
 assign reset_state_timeout_counter_o = reset_state_timeout_counter_r;
 assign SBINIT_done_o = SBINIT_done_r;
 
+// Wake up trigger to send first message
+logic [1:0] wakeup_cnt;
+logic wakeup_trigger;
+logic wakeup_fired;
+
+always_ff @(posedge clk_100MHz or reset) begin
+    if (reset) begin
+        wakeup_cnt    <= 2'd0;
+        wakeup_trigger <= 1'b0;
+        wakeup_fired  <= 1'b0;
+    end else if (enable_i && !wakeup_fired) begin
+        if (wakeup_cnt < 2'd2) begin
+            wakeup_cnt <= wakeup_cnt + 1'b1;
+            wakeup_trigger <= 1'b0;
+        end else begin
+            wakeup_trigger <= 1'b1;
+            wakeup_fired   <= 1'b1; // Latch so it only triggers once
+        end
+    end else begin
+        wakeup_trigger <= 1'b0;
+    end
+end
+
+
 // Process recieved messages
 always_ff @(negedge clk_100MHz or reset) begin
     if (reset) begin
         SB_RX_msg_req_o <= 1'b0;
         make_decision <= 2'd0;
-        reset_valid_out_flag <= 1'b0; 
         decision_done <= 1'b0;
+        reset_SBmessage_retry_timeout <= 1'b0;
+        trigger_SB_TX <= 1'b0; 
     end else if (enable_i) begin
+        if (SB_TX_msg_valid_o) trigger_SB_TX <= 1'b0; 
         if (SB_RX_msg_valid_i) begin
+            reset_SBmessage_retry_timeout <= 1'b1; 
+            decision_done <= 1'b0; 
             SB_RX_msg_req_o <= 1'b0;
             make_decision <= 2'd1;
-            reset_valid_out_flag <= 1'b1;
-        end else if (valid_out_flag && SB_TX_msg_sendNextFlag_i) begin
+        end else if (SB_RX_msg_available_i) begin
             SB_RX_msg_req_o <= 1'b1;
-            reset_valid_out_flag <= 1'b0; 
         end else begin
             SB_RX_msg_req_o <= 1'b0;
         end
 
         if (make_decision == 2'd1) make_decision <= 2'd2;
         else if (make_decision == 2'd2) begin 
-            decision_done <= 1'b1; 
+            decision_done <= 1'b1;
+            trigger_SB_TX <= 1'b1; //trigger TX after decision is made
             make_decision <= 2'd0; // reset decision after 2 cycle
+            reset_SBmessage_retry_timeout <= 1'b0; 
         end
     end
 end
@@ -180,25 +208,22 @@ always_ff @(posedge clk_100MHz or reset) begin
     end
 end
 
-logic decision_done;
+
 
 // valid and SB message out logic
 always_ff @(posedge clk_100MHz or reset) begin
     if (reset) begin
-        valid_out_flag <= 1'b0;
         SB_TX_msg_valid_o <= 1'b0;
         SB_TX_msg_o <= reset_SB_msg();
     end else if (enable_i) begin
-        if (SBmessage_retry_timeout_flag) begin
+        if (SBmessage_retry_timeout_flag || trigger_SB_TX || wakeup_trigger) begin
             SB_TX_msg_valid_o <= 1'b1;
             if (decision_done) SB_TX_msg_o <= Stored_SBmsg;
             else SB_TX_msg_o <= Next_msg;
-            valid_out_flag <= 1'b1;
         end else begin
             SB_TX_msg_valid_o <= 1'b0;
-            SB_TX_msg_o <= reset_SB_msg();
+            //SB_TX_msg_o <= reset_SB_msg();
         end
-        if (reset_valid_out_flag) valid_out_flag <= 1'b0;
     end
 end
 
