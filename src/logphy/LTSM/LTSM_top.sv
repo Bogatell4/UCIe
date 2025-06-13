@@ -34,11 +34,9 @@ output [15:0] MB_dataPins_o
 
 wire SB_msg_valid_i_w;
 wire SB_msg_available_i_w;
-logic SB_msg_req_flag;
 logic SB_msg_req;
 
 wire SB_TX_valid_w;
-logic SB_TX_valid_flag;
 wire SB_TX_sendNext_w;
 logic enable_SB_tx;
 logic enable_SB_rx;
@@ -126,6 +124,21 @@ assign enable_TRAINERROR = (LT_Current_state == TRAINERROR);
 assign enable_ACTIVE = (LT_Current_state == ACTIVE);
 
 assign LTSM_active_state_o = (LT_Current_state == ACTIVE);
+
+//reset state signals
+logic reset_SBINIT;
+logic reset_MBINIT;
+logic reset_MBTRAIN;
+logic reset_LINKINIT;
+logic reset_ACTIVE;
+logic reset_TRAINERROR;
+
+assign reset_SBINIT      = reset | (LT_Current_state != SBINIT);
+assign reset_MBINIT      = reset | (LT_Current_state != MBINIT);
+assign reset_MBTRAIN     = reset | (LT_Current_state != MBTRAIN);
+assign reset_LINKINIT    = reset | (LT_Current_state != LINKINIT);
+assign reset_ACTIVE      = reset | (LT_Current_state != ACTIVE);
+assign reset_TRAINERROR  = reset | (LT_Current_state != TRAINERROR);
 
 // State done signals
 wire SBINIT_done;
@@ -282,15 +295,6 @@ SB_TX #(
     .clkPin_o(SB_clkPin_TX_TRANSMITTER)
 );
 
-//logic for set and async reset of SB_TX_valid_flag
-// MAYBE NOT NEEDED use if too many msgs are sent out at once
-/*always_ff @(reset or posedge SB_TX_sendNext_w or posedge SB_TX_valid_w) begin
-    if (reset) SB_TX_valid_flag <= 1'b0;
-    else if (SB_TX_sendNext_w) SB_TX_valid_flag <= 1'b0;
-    else if (SB_TX_valid_w) SB_TX_valid_flag <= 1'b1;
-end*/
-
-// Instantiate SB_RX
 SB_RX #(
     .slow_buffer_size(4)
 ) SB_rx_inst (
@@ -307,19 +311,11 @@ SB_RX #(
     .valid_o(SB_msg_valid_i_w)
 );
 
-//logic for set and async reset of SB_msg_req_flag
-// MAYBE NOT NEEDED use if too many msgs come out at once
-/*always_ff @(reset or posedge SB_msg_valid_i_w or posedge SB_msg_req) begin
-    if (reset) SB_msg_req_flag <= 1'b0;
-    else if (SB_msg_valid_i_w) SB_msg_req_flag <= 1'b0;
-    else if (SB_msg_req) SB_msg_req_flag <= 1'b1;
-end*/
-
 // Instantiate SBINIT
 SBINIT sbinit_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
-    .reset(reset),
+    .reset(reset_SBINIT),
     .enable_i(enable_SBINIT),
     .SBINIT_done_o(SBINIT_done),
 
@@ -355,7 +351,7 @@ MBINIT mbinit_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
     .clk_2GHz(clk_2GHz),
-    .reset(reset),
+    .reset(reset_MBINIT),
     .enable_i(enable_MBINIT),
     .MBINIT_done_o(MBINIT_done),
 
@@ -391,7 +387,7 @@ MBTRAIN mbtrain_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
     .clk_2GHz(clk_2GHz),
-    .reset(reset),
+    .reset(reset_MBTRAIN),
     .enable_i(enable_MBTRAIN),
     .MBTRAIN_done_o(MBTRAIN_done),
 
@@ -427,7 +423,7 @@ LINKINIT linkinit_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
     .clk_2GHz(clk_2GHz),
-    .reset(reset),
+    .reset(reset_LINKINIT),
     .enable_i(enable_LINKINIT),
     .LINKINIT_done_o(LINKINIT_done),
 
@@ -463,7 +459,7 @@ ACTIVE active_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
     .clk_2GHz(clk_2GHz),
-    .reset(reset),
+    .reset(reset_ACTIVE),
     .enable_i(enable_ACTIVE),
     .ACTIVE_done_o(ACTIVE_done),
 
@@ -497,7 +493,7 @@ ACTIVE active_inst (
 TRAINERROR trainerror_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
-    .reset(reset),
+    .reset(reset_TRAINERROR),
     .enable_i(enable_TRAINERROR),
     .TRAINERROR_done_o(TRAINERROR_done),
 
