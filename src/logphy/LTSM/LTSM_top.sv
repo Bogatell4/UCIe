@@ -183,7 +183,7 @@ assign SB_dataPin_TX_o     = (LT_Current_state == RESET)      ? '0              
                              (enable_SB_tx_SBINIT == 1'b1) ?  SB_dataPin_TX_TRANSMITTER :
                              (LT_Current_state == SBINIT)     ? SB_dataPin_TX_SBINIT     : SB_dataPin_TX_TRANSMITTER;
 
-assign enable_SB_rx        = (LT_Current_state == RESET)      ? 1'b1                     :
+assign enable_SB_rx        = (LT_Current_state == RESET)      ? 1'b0                     :
                              (LT_Current_state == SBINIT)     ? enable_SB_rx_SBINIT      :
                              (LT_Current_state == TRAINERROR) ? enable_SB_rx_TRAINERROR  : 1'b1;
 

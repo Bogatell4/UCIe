@@ -64,12 +64,13 @@ logic reset_state_timeout_counter_r;
 assign reset_state_timeout_counter_o = reset_state_timeout_counter_r;
 assign SBINIT_done_o = SBINIT_done_r;
 
-// Process request messages
+// Process recieved messages
 always_ff @(negedge clk_100MHz or reset) begin
     if (reset) begin
         SB_RX_msg_req_o <= 1'b0;
         make_decision <= 2'd0;
         reset_valid_out_flag <= 1'b0; 
+        decision_done <= 1'b0;
     end else if (enable_i) begin
         if (SB_RX_msg_valid_i) begin
             SB_RX_msg_req_o <= 1'b0;
@@ -83,7 +84,10 @@ always_ff @(negedge clk_100MHz or reset) begin
         end
 
         if (make_decision == 2'd1) make_decision <= 2'd2;
-        else if (make_decision == 2'd2) make_decision <= 2'd0; // reset decision after 2 cycle
+        else if (make_decision == 2'd2) begin 
+            decision_done <= 1'b1; 
+            make_decision <= 2'd0; // reset decision after 2 cycle
+        end
     end
 end
 
@@ -95,21 +99,17 @@ always_ff @(negedge clk_100MHz or reset) begin
         Change_condition2_Recieved_SBINIT_done_resp <= 1'b0;
         reset_state_timeout_counter_r <= 1'b0;
     end else if (enable_i) begin
-        if (make_decision == 2'd2) begin
-            recieved_OutofReset <= 1'b0;
-            recieved_SBINIT_done_req <= 1'b0;
+        if (SB_RX_msg_valid_i) begin
+            reset_state_timeout_counter_r <= 1'b1; 
+            if (SB_RX_msg_i.msg_num == SBINIT_out_of_reset) begin
+            recieved_OutofReset <= 1'b1;
+            end else if (SB_RX_msg_i.msg_num == SBINIT_done_req) begin
+                recieved_SBINIT_done_req <= 1'b1;
+            end else if (SB_RX_msg_i.msg_num == SBINIT_done_resp) begin
+                Change_condition2_Recieved_SBINIT_done_resp <= 1'b1;
+            end
         end else begin
-            if (SB_RX_msg_valid_i) begin
-                reset_state_timeout_counter_r <= 1'b1; 
-                if (SB_RX_msg_i.msg_num == SBINIT_out_of_reset) begin
-                recieved_OutofReset <= 1'b1;
-                end else if (SB_RX_msg_i.msg_num == SBINIT_done_req) begin
-                    recieved_SBINIT_done_req <= 1'b1;
-                end else if (SB_RX_msg_i.msg_num == SBINIT_done_resp) begin
-                    Change_condition2_Recieved_SBINIT_done_resp <= 1'b1;
-                end
-            end else begin
-                reset_state_timeout_counter_r <= 1'b0;
+            if (make_decision == 2'd2) begin
                 recieved_OutofReset <= 1'b0;
                 recieved_SBINIT_done_req <= 1'b0;
             end
@@ -180,16 +180,19 @@ always_ff @(posedge clk_100MHz or reset) begin
     end
 end
 
+logic decision_done;
+
 // valid and SB message out logic
 always_ff @(posedge clk_100MHz or reset) begin
     if (reset) begin
-        valid_out_flag <= 1'b1; // Start with this flag activated so the first message can be requested
+        valid_out_flag <= 1'b0;
         SB_TX_msg_valid_o <= 1'b0;
         SB_TX_msg_o <= reset_SB_msg();
     end else if (enable_i) begin
         if (SBmessage_retry_timeout_flag) begin
             SB_TX_msg_valid_o <= 1'b1;
-            SB_TX_msg_o <= Stored_SBmsg;
+            if (decision_done) SB_TX_msg_o <= Stored_SBmsg;
+            else SB_TX_msg_o <= Next_msg;
             valid_out_flag <= 1'b1;
         end else begin
             SB_TX_msg_valid_o <= 1'b0;

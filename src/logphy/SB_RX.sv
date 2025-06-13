@@ -37,7 +37,7 @@ module SB_RX #(
             shift_reg <= 64'd0;
             bit_cnt <= 6'd0;
             msg_valid <= 1'b0;
-        end else if (enable_i) begin
+        end else if (enable_i && reset==1'b0) begin
             bit_cnt <= bit_cnt + 1;
             shift_reg <= {dataPin_i, shift_reg[63:1]};
             msg_valid <= 1'b0;
