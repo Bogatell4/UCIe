@@ -95,6 +95,57 @@ module LTSM_SBINIT_tb;
         $display("Tracing enabled. Simulation will finish at 10ms.");
     end
 
+    // State monitoring for state change display
+    logic [2:0] prev_state_dut0, prev_state_dut1;
+
+    // Flags to track if each DUT has ever entered MBINIT (state 010)
+    logic dut0_MBINIT_reached, dut1_MBINIT_reached;
+
+    always @(posedge clk_100MHz or posedge reset) begin
+        if (reset) begin
+            dut0_MBINIT_reached <= 1'b0;
+            dut1_MBINIT_reached <= 1'b0;
+        end else begin
+            if (dut0.LT_Current_state == 3'b010)
+                dut0_MBINIT_reached <= 1'b1;
+            if (dut1.LT_Current_state == 3'b010)
+                dut1_MBINIT_reached <= 1'b1;
+        end
+    end
+
+    // Display state changes for both DUTs
+    always @(posedge clk_100MHz) begin
+        if (reset) begin
+            prev_state_dut0 <= 3'bxxx;
+            prev_state_dut1 <= 3'bxxx;
+        end else begin
+            if (dut0.LT_Current_state !== prev_state_dut0) begin
+                $display("dut0 entered state [%s] at %0t", 
+                    (dut0.LT_Current_state == 3'b000) ? "RESET"  :
+                    (dut0.LT_Current_state == 3'b001) ? "SBINIT" :
+                    (dut0.LT_Current_state == 3'b010) ? "MBINIT" :
+                    (dut0.LT_Current_state == 3'b011) ? "MBTRAIN":
+                    (dut0.LT_Current_state == 3'b100) ? "LINKINIT":
+                    (dut0.LT_Current_state == 3'b101) ? "ACTIVE" :
+                    (dut0.LT_Current_state == 3'b110) ? "TRAINERROR" : "UNKNOWN",
+                    $time);
+                prev_state_dut0 <= dut0.LT_Current_state;
+            end
+            if (dut1.LT_Current_state !== prev_state_dut1) begin
+                $display("dut1 entered state [%s] at %0t", 
+                    (dut1.LT_Current_state == 3'b000) ? "RESET"  :
+                    (dut1.LT_Current_state == 3'b001) ? "SBINIT" :
+                    (dut1.LT_Current_state == 3'b010) ? "MBINIT" :
+                    (dut1.LT_Current_state == 3'b011) ? "MBTRAIN":
+                    (dut1.LT_Current_state == 3'b100) ? "LINKINIT":
+                    (dut1.LT_Current_state == 3'b101) ? "ACTIVE" :
+                    (dut1.LT_Current_state == 3'b110) ? "TRAINERROR" : "UNKNOWN",
+                    $time);
+                prev_state_dut1 <= dut1.LT_Current_state;
+            end
+        end
+    end
+
     // Test sequence
     initial begin
         reset = 1;
@@ -105,30 +156,15 @@ module LTSM_SBINIT_tb;
         start_LT_i = 1;
         #10_000; // 10us at 1ns resolution
 
-        // Check SBINIT_done for both DUTs
-        if (dut0.SBINIT_done && dut1.SBINIT_done) begin
-            $display("TEST SUCCESSFUL: SBINIT_done is 1 for both DUTs at end of simulation.");
+        // Check if both DUTs ever reached state 010 (MBINIT)
+        if (dut0_MBINIT_reached && dut1_MBINIT_reached) begin
+            $display("TEST SUCCESSFUL: Both DUTs entered state MBINIT (010) at some point during simulation.");
         end else begin
-            $error("TEST FAILED: SBINIT_done is not 1 for both DUTs at end of simulation. dut0.SBINIT_done=%0b, dut1.SBINIT_done=%0b", dut0.SBINIT_done, dut1.SBINIT_done);
+            $error("TEST FAILED: Both DUTs did not enter state MBINIT (010). dut0_MBINIT_reached=%0b, dut1_MBINIT_reached=%0b", dut0_MBINIT_reached, dut1_MBINIT_reached);
         end
 
         $display("Simulation finished at 10us.");
         $finish;
     end
-
-    // Monitor state changes and counters for both DUTs
-    /*initial begin
-        $display("Time\tDUT0_State\tDUT1_State\tDUT0_Active\tDUT1_Active");
-        forever begin
-            @(posedge clk_100MHz);
-            $display("%0t\t%0d\t\t%0d\t\t%b\t\t%b",
-                $time,
-                dut0.LT_Current_state,
-                dut1.LT_Current_state,
-                LTSM_active_state_o_0,
-                LTSM_active_state_o_1
-            );
-        end
-    end*/
 
 endmodule
