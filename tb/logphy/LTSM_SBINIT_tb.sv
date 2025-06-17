@@ -28,7 +28,7 @@ module LTSM_SBINIT_tb;
     // State monitoring
     wire LTSM_active_state_o_0, LTSM_active_state_o_1;
 
-    // Instantiate LTSM_top 0 (acts as "left" device)
+    // Instantiate LTSM_top 0
     LTSM_top dut0 (
         .clk_100MHz(clk_100MHz),
         .clk_800MHz(clk_800MHz),
@@ -55,7 +55,7 @@ module LTSM_SBINIT_tb;
         .MB_dataPins_o(MB_dataPins_o)
     );
 
-    // Instantiate LTSM_top 1 (acts as "right" device)
+    // Instantiate LTSM_top 1
     LTSM_top dut1 (
         .clk_100MHz(clk_100MHz),
         .clk_800MHz(clk_800MHz),
@@ -86,7 +86,7 @@ module LTSM_SBINIT_tb;
     always #5 clk_100MHz <= ~clk_100MHz;   // 100MHz
     always #0.625 clk_800MHz <= ~clk_800MHz; // 800MHz
     //always #0.25 clk_2GHz <= ~clk_2GHz;   // 2GHz Not used for now
-    assign clk_2GHz = 0; // Disable 2GHz clock for now
+    assign clk_2GHz = 0; // Disable 2GHz
 
     // Trace options and simulation finish
     initial begin

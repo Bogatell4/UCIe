@@ -31,9 +31,9 @@ module SBINIT (
 
     // SBINIT specific outputs
     output enable_SB_tx,
-    output enable_SB_rx, //TODO
+    output enable_SB_rx,
 
-    output reset_state_timeout_counter_o // TODO
+    output reset_state_timeout_counter_o
 );
 
 typedef enum logic{ 
@@ -111,7 +111,7 @@ always_ff @(posedge clk_100MHz or reset) begin
         if (make_decision == 2'd1) make_decision <= 2'd2;
         else if (make_decision == 2'd2) begin 
             decision_done <= 1'b1;
-            trigger_SB_TX <= 1'b1; //trigger TX after decision is made
+            trigger_SB_TX <= 1'b1; // trigger TX after decision is made
             make_decision <= 2'd0; // reset decision after 2 cycle
             reset_SBmessage_retry_timeout <= 1'b0; 
         end else if (make_decision == 2'd0) trigger_SB_TX <= 1'b0; 
@@ -196,6 +196,7 @@ always_ff @(posedge clk_100MHz or reset) begin
         end
     end         
 end
+
 // Store SBmessage after decision has been made
 always_ff @(posedge clk_100MHz or reset) begin
     if (reset) begin
@@ -206,8 +207,6 @@ always_ff @(posedge clk_100MHz or reset) begin
         end
     end
 end
-
-
 
 // valid and SB message out logic
 always_ff @(posedge clk_100MHz or reset) begin
@@ -221,7 +220,6 @@ always_ff @(posedge clk_100MHz or reset) begin
             else SB_TX_msg_o <= Next_msg;
         end else begin
             SB_TX_msg_valid_o <= 1'b0;
-            //SB_TX_msg_o <= reset_SB_msg();
         end
     end
 end

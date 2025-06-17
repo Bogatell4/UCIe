@@ -52,7 +52,7 @@ module ShiftReg_3d #(
             sync_r[2] <= sync_r[1];
             valid_r[1] <= valid_r[0];
             valid_r[2] <= valid_r[1];
-            
         end
     end
+
 endmodule

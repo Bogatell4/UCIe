@@ -458,6 +458,8 @@ LINKINIT linkinit_inst (
 );
 
 // Instantiate ACTIVE
+// This module is used to handle the active state of the link with all MB communication
+// Empty for now,
 ACTIVE active_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
@@ -493,6 +495,8 @@ ACTIVE active_inst (
     .reset_state_timeout_counter_o(reset_timeout_counter_ACTIVE)
 );
 
+// Instantiate TRAINERROR
+// This module is used to handle errors during training, empty for now
 TRAINERROR trainerror_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
@@ -534,11 +538,9 @@ always_comb begin
         end
 
         SBINIT: begin
-
         end
 
         MBINIT: begin
-
         end
 
         MBTRAIN: begin 
@@ -551,7 +553,6 @@ always_comb begin
         end
 
         TRAINERROR: begin
-
         end
 
         L1_L2: begin
@@ -559,12 +560,10 @@ always_comb begin
 
         default: begin
         end
-
     endcase
 end
 
 // Next state Combinational Logic
-// TODO: separately reset each state when entering. Create separate reset signals.
 always_comb begin
     LT_NEXT_state = LT_Current_state;
     reset_stateChange_timeout_counter = 1'b0;
@@ -572,49 +571,59 @@ always_comb begin
         LT_NEXT_state = TRAINERROR;
     end else begin
         unique case (LT_Current_state)
+
             RESET: begin
                 if (enable_i && start_LT_i && counter_reset_flag) begin
                     LT_NEXT_state = SBINIT;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             SBINIT: begin
                 if (SBINIT_done) begin
                     LT_NEXT_state = MBINIT;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             MBINIT: begin
                 if (MBINIT_done) begin
                     LT_NEXT_state = MBTRAIN;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             MBTRAIN: begin 
                 if (MBTRAIN_done) begin
                     LT_NEXT_state = LINKINIT;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             LINKINIT: begin
                 if (LINKINIT_done) begin
                     LT_NEXT_state = ACTIVE;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             ACTIVE: begin
             end
+
             TRAINERROR: begin
                 if (TRAINERROR_done) begin
                     LT_NEXT_state = RESET;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             L1_L2: begin
             end
+
             default: begin
                 LT_NEXT_state = RESET;
             end
+
         endcase
     end
 end
@@ -628,9 +637,7 @@ end
 // 4ms counter for 100MHz clock,
 // always need to stay 4ms when entering RESET state, modify this value if needed
 reg [18:0] reset_counter; // 19 bits are enough for 400,000
-// flag works, reduced on purpose to shorten simulation time, uncomment line below to establish 4ms out of reset time.
-//wire counter_reset_flag = (reset_counter == 19'd399_999); // 4ms counter reset flag
-wire counter_reset_flag = (reset_counter == 19'd99);
+wire counter_reset_flag = (reset_counter == 19'd399_999); // 4ms counter reset flag
 logic start_reset_counter;
 
 always_ff @(posedge clk_100MHz or reset) begin

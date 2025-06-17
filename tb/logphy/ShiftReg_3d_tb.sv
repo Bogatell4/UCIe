@@ -61,7 +61,7 @@ module ShiftReg_3d_tb;
 
         // Test case 2: Shift new data
         enable = 1;
-        d_i = 8'b01100110; // New input data
+        d_i = 8'b01100110;
         #10;
         enable = 0;
 
@@ -77,7 +77,5 @@ module ShiftReg_3d_tb;
         #50;
         $finish;
     end
-
-    // Monitor outputs
 
 endmodule

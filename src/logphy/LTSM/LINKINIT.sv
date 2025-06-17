@@ -185,6 +185,7 @@ always_ff @(posedge clk_100MHz or reset) begin
         end
     end         
 end
+
 // Store SBmessage after decision has been made
 always_ff @(posedge clk_100MHz or reset) begin
     if (reset) begin
@@ -208,7 +209,6 @@ always_ff @(posedge clk_100MHz or reset) begin
             else SB_TX_msg_o <= Next_msg;
         end else begin
             SB_TX_msg_valid_o <= 1'b0;
-            //SB_TX_msg_o <= reset_SB_msg();
         end
     end
 end

@@ -136,8 +136,4 @@ module SB_RX #(
         end
     end
 
-    
-
-
-
 endmodule

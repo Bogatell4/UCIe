@@ -1,8 +1,9 @@
+// This file contains the code and decode functions for SB messages
+// Expand in order to add more SB messages encodings
+
 `ifndef SB_CODEX_PKG_VH
 `define SB_CODEX_PKG_VH
 
-// Code and decode functions for SB messages
-// Expand in order to add more messages along with the function to translate (just below)
 typedef enum logic [5:0]{
     CODEX_ERROR,
     SBINIT_out_of_reset,
@@ -98,9 +99,9 @@ function automatic void get_SB_msg_code(
 
         LinkMgmt_RDI_Active_req:          begin msg_code = 8'h01; msg_subcode = 8'h01; end
         LinkMgmt_RDI_Active_resp:         begin msg_code = 8'h02; msg_subcode = 8'h01; end
-        
         // Add more message codes and subcodes as needed
-        default:               begin msg_code = 8'hFF; msg_subcode = 8'hFF; end
+
+        default: begin msg_code = 8'hFF; msg_subcode = 8'hFF; end
     endcase
 endfunction
 
@@ -152,6 +153,7 @@ function automatic void get_SB_msg_num_from_code(
 
         {8'h01, 8'h01}: msg_num = LinkMgmt_RDI_Active_req;
         {8'h02, 8'h01}: msg_num = LinkMgmt_RDI_Active_resp;
+        // Add more message codes and subcodes as needed
 
         default:        msg_num = CODEX_ERROR;
     endcase
@@ -205,8 +207,8 @@ typedef struct packed {
     logic [7:0] be;
     logic ep; // Data Poison? 
     logic cr; //Credit return for Register Access/Completions
-    logic [23:0] addr; // 24 bits address, yhis field could be further defined with typedefs
-    logic [2:0] Status; //Used for RegAccCompletions, maybe make it typedef?
+    logic [23:0] addr; // 24 bits address, this field could be further defined with typedefs
+    logic [2:0] Status; //Used for RegAccCompletions, could make it a typedef
     logic [15:0] msg_info;
     logic cp; //Control parity, not used in this version
     logic dp; //Data parity, not used in this version
@@ -446,4 +448,3 @@ function automatic void decode_SB_msg(
 endfunction
 
 `endif // SB_CODEX_PKG_VH
-

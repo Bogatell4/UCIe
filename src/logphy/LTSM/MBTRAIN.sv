@@ -36,7 +36,6 @@ module MBTRAIN (
     output reset_SBmessage_retry_timeout,
 
     output reset_state_timeout_counter_o
-
 );
 
 typedef enum logic [3:0] { 

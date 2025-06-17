@@ -48,7 +48,7 @@ typedef enum logic [2:0] {
     RepairMB = 3'd5
 } MBINIT_state_t;
 
-assign SB_TX_dataBus_o = '0; // No data bus used in SBINIT
+assign SB_TX_dataBus_o = '0; // No data bus used in MBINIT
 
 logic [1:0] make_decision;
 logic trigger_SB_TX;
@@ -405,6 +405,5 @@ always_ff @(posedge clk_100MHz or reset) begin
         endcase
     end
 end
-
 
 endmodule
