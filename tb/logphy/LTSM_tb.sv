@@ -154,7 +154,7 @@ module LTSM_tb;
         reset = 0;
         #50;
         start_LT_i = 1;
-        #1_000_000; // 1ms at 1ns resolution
+        #20_000; // 20us at 1ns resolution
 
         // Check if both DUTs ever reached state 101 (ACTIVE)
         if (dut0_ACTIVE_reached && dut1_ACTIVE_reached) begin
@@ -163,7 +163,7 @@ module LTSM_tb;
             $error("TEST FAILED: Both DUTs did not enter state ACTIVE (101). dut0_ACTIVE_reached=%0b, dut1_ACTIVE_reached=%0b", dut0_ACTIVE_reached, dut1_ACTIVE_reached);
         end
 
-        $display("Simulation finished at 1ms.");
+        $display("Simulation finished at 20us.");
         $finish;
     end
 

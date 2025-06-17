@@ -193,7 +193,7 @@ always_comb begin
     Next_data = '0;
     if (MBINIT_state == PARAM && recieved_paramConfig_req) begin
         Next_msg.msg_num = MBINIT_PARAM_config_resp;
-        Next_msg.opcode = Message_without_Data;
+        Next_msg.opcode = Message_with_64b_Data;
         Next_msg.srcid = D2D_Adapter;
         Next_msg.dstid = Physical_Layer;
         Next_msg.cp = 1'b0;
@@ -202,7 +202,7 @@ always_comb begin
         Next_data = 64'h1234_5678_9ABC_DEF0; // Example data, check standard pg 271 for more info
     end else if (MBINIT_state == PARAM) begin
         Next_msg.msg_num = MBINIT_PARAM_config_req;
-        Next_msg.opcode = Message_without_Data;
+        Next_msg.opcode = Message_with_64b_Data;
         Next_msg.srcid = D2D_Adapter;
         Next_msg.dstid = Physical_Layer;
         Next_msg.cp = 1'b0;

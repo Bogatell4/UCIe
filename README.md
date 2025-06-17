@@ -5,12 +5,6 @@ Aiming for standard package 16 lanes with the following functionalities (for now
 - :green_circle: Data transfer in MainBand
 - :green_circle: Sideband Communication
 - :yellow_circle: Link state management
-    - :green_circle: SB encode/decode
-    - :green_circle: LTSM + Empty frames for each state
-    - :green_circle: SBINIT
-    - :yellow_circle: MBINIT
-    - :red_circle: MBTRAIN
-    - :red_circle: LINKINIT
-    - :red_circle: ACTIVE
-- :red_circle: Parameter negotiation
-- :red_circle: Custom streaming protocol
+    - :green_circle: Transition through all states with link partner to ACTIVE
+    - :yellow_circle: Empty shell for each LT state, able to add extra functionality in the future
+    - :red_circle: Link parameter negotiation

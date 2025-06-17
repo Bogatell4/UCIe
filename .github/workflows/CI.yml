@@ -58,13 +58,9 @@ jobs:
         verilator -I./tb/logphy -I./src/logphy -I./src/logphy/LTSM --binary -f All_filesList.f --top-module LTSM_SBINIT_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ns/1ps 
         ./obj_dir/VLTSM_SBINIT_tb
 
-    # - name: Multiply test
-    #   run: |
-    #     verilator --binary device.sv multiplier_tb.sv --top-module multiplier_tb --trace --timing
-    #     ./obj_dir/Vmultiplier_tb 
-    #
-    #- name: Upload simulation logs as artifact
-    #  uses: actions/upload-artifact@v2
-    #  with:
-    #    name: simulation-logs
-    #    path: ./obj_dir/vltable.log  # This is where Verilator logs are generated
+    - name: LTSM test
+      run: |
+        verilator -I./tb/logphy -I./src/logphy -I./src/logphy/LTSM --binary -f All_filesList.f --top-module LTSM_tb --trace --timing --trace-max-array 512 --trace-max-width 512 --timescale 1ns/1ps 
+        ./obj_dir/VLTSM_tb
+
+
