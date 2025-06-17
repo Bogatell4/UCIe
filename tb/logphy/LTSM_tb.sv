@@ -92,7 +92,7 @@ module LTSM_tb;
     initial begin
         $dumpfile("../LTSM_tb.vcd");
         $dumpvars(0, LTSM_tb);
-        $display("Tracing enabled. Simulation will finish at 10ms.");
+        $display("Tracing enabled. Simulation will finish at 20us.");
     end
 
     // State monitoring for state change display
