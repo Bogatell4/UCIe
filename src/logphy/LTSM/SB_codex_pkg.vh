@@ -139,7 +139,7 @@ typedef enum logic [2:0] {
     Stack0_Protocol = 3'b000,
     Stack1_Protocol = 3'b100,
     Managment_Port_Gateway = 3'b011,
-    D2D_Adapter_src = 3'b001
+    D2D_Adapter = 3'b001
     // Other encodings reserved
 } srcid_t;
 
