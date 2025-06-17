@@ -375,6 +375,7 @@ MBINIT mbinit_inst (
     .SB_RX_dataBus_i(SB_dataBus_RX),
     .SB_RX_msg_req_o(SB_RX_msgReq_MBINIT),
     .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+    .SB_RX_msg_available_i(SB_msg_available_i_w),
 
     .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
     .reset_SBmessage_retry_timeout(reset_message_retry_timeout_MBINIT),
@@ -411,6 +412,7 @@ MBTRAIN mbtrain_inst (
     .SB_RX_dataBus_i(SB_dataBus_RX),
     .SB_RX_msg_req_o(SB_RX_msgReq_MBTRAIN),
     .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+    .SB_RX_msg_available_i(SB_msg_available_i_w),
 
     .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
     .reset_SBmessage_retry_timeout(reset_message_retry_timeout_MBTRAIN),
@@ -447,6 +449,7 @@ LINKINIT linkinit_inst (
     .SB_RX_dataBus_i(SB_dataBus_RX),
     .SB_RX_msg_req_o(SB_RX_msgReq_LINKINIT),
     .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+    .SB_RX_msg_available_i(SB_msg_available_i_w),
 
     .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
     .reset_SBmessage_retry_timeout(reset_message_retry_timeout_LINKINIT),

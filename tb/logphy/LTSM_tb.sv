@@ -90,26 +90,26 @@ module LTSM_tb;
 
     // Trace options and simulation finish
     initial begin
-        $dumpfile("../LTSM_SBINIT_tb.vcd");
-        $dumpvars(0, LTSM_SBINIT_tb);
+        $dumpfile("../LTSM_tb.vcd");
+        $dumpvars(0, LTSM_tb);
         $display("Tracing enabled. Simulation will finish at 10ms.");
     end
 
     // State monitoring for state change display
     logic [2:0] prev_state_dut0, prev_state_dut1;
 
-    // Flags to track if each DUT has ever entered MBINIT (state 010)
-    logic dut0_MBINIT_reached, dut1_MBINIT_reached;
+    // Flags to track if each DUT has ever entered ACTIVE (state 101)
+    logic dut0_ACTIVE_reached, dut1_ACTIVE_reached;
 
     always @(posedge clk_100MHz or posedge reset) begin
         if (reset) begin
-            dut0_MBINIT_reached <= 1'b0;
-            dut1_MBINIT_reached <= 1'b0;
+            dut0_ACTIVE_reached <= 1'b0;
+            dut1_ACTIVE_reached <= 1'b0;
         end else begin
-            if (dut0.LT_Current_state == 3'b010)
-                dut0_MBINIT_reached <= 1'b1;
-            if (dut1.LT_Current_state == 3'b010)
-                dut1_MBINIT_reached <= 1'b1;
+            if (dut0.LT_Current_state == 3'b101)
+                dut0_ACTIVE_reached <= 1'b1;
+            if (dut1.LT_Current_state == 3'b101)
+                dut1_ACTIVE_reached <= 1'b1;
         end
     end
 
@@ -154,16 +154,16 @@ module LTSM_tb;
         reset = 0;
         #50;
         start_LT_i = 1;
-        #10_000; // 10us at 1ns resolution
+        #1_000_000; // 1ms at 1ns resolution
 
-        // Check if both DUTs ever reached state 010 (MBINIT)
-        if (dut0_MBINIT_reached && dut1_MBINIT_reached) begin
-            $display("TEST SUCCESSFUL: Both DUTs entered state MBINIT (010) at some point during simulation.");
+        // Check if both DUTs ever reached state 101 (ACTIVE)
+        if (dut0_ACTIVE_reached && dut1_ACTIVE_reached) begin
+            $display("TEST SUCCESSFUL: Both DUTs entered state ACTIVE (101) at some point during simulation.");
         end else begin
-            $error("TEST FAILED: Both DUTs did not enter state MBINIT (010). dut0_MBINIT_reached=%0b, dut1_MBINIT_reached=%0b", dut0_MBINIT_reached, dut1_MBINIT_reached);
+            $error("TEST FAILED: Both DUTs did not enter state ACTIVE (101). dut0_ACTIVE_reached=%0b, dut1_ACTIVE_reached=%0b", dut0_ACTIVE_reached, dut1_ACTIVE_reached);
         end
 
-        $display("Simulation finished at 10us.");
+        $display("Simulation finished at 1ms.");
         $finish;
     end
 

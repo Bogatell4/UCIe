@@ -43,8 +43,10 @@ typedef enum logic [5:0]{
     MBTRAIN_DataTrainCenter2_end_req,
     MBTRAIN_DataTrainCenter2_end_resp,
     MBTRAIN_LinkSpeed_done_req,
-    MBTRAIN_LinkSpeed_done_resp
+    MBTRAIN_LinkSpeed_done_resp,
 
+    LinkMgmt_RDI_Active_req,
+    LinkMgmt_RDI_Active_resp
     // Add more message numbers as needed
 } SB_msgNum_t;
 
@@ -93,6 +95,9 @@ function automatic void get_SB_msg_code(
         MBTRAIN_DataTrainCenter2_end_resp:begin msg_code = 8'hBA; msg_subcode = 8'h14; end
         MBTRAIN_LinkSpeed_done_req:       begin msg_code = 8'hB5; msg_subcode = 8'h19; end
         MBTRAIN_LinkSpeed_done_resp:      begin msg_code = 8'hBA; msg_subcode = 8'h19; end
+
+        LinkMgmt_RDI_Active_req:          begin msg_code = 8'h01; msg_subcode = 8'h01; end
+        LinkMgmt_RDI_Active_resp:         begin msg_code = 8'h02; msg_subcode = 8'h01; end
         
         // Add more message codes and subcodes as needed
         default:               begin msg_code = 8'hFF; msg_subcode = 8'hFF; end
@@ -108,6 +113,46 @@ function automatic void get_SB_msg_num_from_code(
         {8'h91, 8'h00}: msg_num = SBINIT_out_of_reset;
         {8'h95, 8'h01}: msg_num = SBINIT_done_req;
         {8'h9A, 8'h01}: msg_num = SBINIT_done_resp;
+
+        {8'hA5, 8'h00}: msg_num = MBINIT_PARAM_config_req;
+        {8'hAA, 8'h00}: msg_num = MBINIT_PARAM_config_resp;
+        {8'hA5, 8'h02}: msg_num = MBINIT_CAL_done_req;
+        {8'hAA, 8'h02}: msg_num = MBINIT_CAL_done_resp;
+        {8'hA5, 8'h08}: msg_num = MBINIT_RepairCLK_done_req;
+        {8'hAA, 8'h08}: msg_num = MBINIT_RepairCLK_done_resp;
+        {8'hA5, 8'h0C}: msg_num = MBINIT_RepairVAL_done_req;
+        {8'hAA, 8'h0C}: msg_num = MBINIT_RepairVAL_done_resp;
+        {8'hA5, 8'h10}: msg_num = MBINIT_ReversalIMB_done_req;
+        {8'hAA, 8'h10}: msg_num = MBINIT_ReversalIMB_done_resp;
+        {8'hA5, 8'h13}: msg_num = MBINIT_RepairMB_end_req;
+        {8'hAA, 8'h13}: msg_num = MBINIT_RepairMB_end_resp;
+
+        {8'hB5, 8'h01}: msg_num = MBTRAIN_VALVREF_end_req;
+        {8'hBA, 8'h01}: msg_num = MBTRAIN_VALVREF_end_resp;
+        {8'hB5, 8'h03}: msg_num = MBTRAIN_DATAVREF_end_req;
+        {8'hBA, 8'h03}: msg_num = MBTRAIN_DATAVREF_end_resp;
+        {8'hB5, 8'h04}: msg_num = MBTRAIN_SpeedIDLE_done_req;
+        {8'hBA, 8'h04}: msg_num = MBTRAIN_SpeedIDLE_done_resp;
+        {8'hB5, 8'h05}: msg_num = MBTRAIN_TXSelfCal_done_req;
+        {8'hBA, 8'h05}: msg_num = MBTRAIN_TXSelfCal_done_resp;
+        {8'hB5, 8'h07}: msg_num = MBTRAIN_RXCLKCal_done_req;
+        {8'hBA, 8'h07}: msg_num = MBTRAIN_RXCLKCal_done_resp;
+        {8'hB5, 8'h0B}: msg_num = MBTRAIN_ValTrainCenter_done_req;
+        {8'hBA, 8'h0B}: msg_num = MBTRAIN_ValTrainCenter_done_resp;
+        {8'hB5, 8'h0D}: msg_num = MBTRAIN_DataTrainCenter1_end_req;
+        {8'hBA, 8'h0D}: msg_num = MBTRAIN_DataTrainCenter1_end_resp;
+        {8'hB5, 8'h10}: msg_num = MBTRAIN_DataTrainVref_end_req;
+        {8'hBA, 8'h10}: msg_num = MBTRAIN_DataTrainVref_end_resp;
+        {8'hB5, 8'h12}: msg_num = MBTRAIN_RXDeskew_end_req;
+        {8'hBA, 8'h12}: msg_num = MBTRAIN_RXDeskew_end_resp;
+        {8'hB5, 8'h14}: msg_num = MBTRAIN_DataTrainCenter2_end_req;
+        {8'hBA, 8'h14}: msg_num = MBTRAIN_DataTrainCenter2_end_resp;
+        {8'hB5, 8'h19}: msg_num = MBTRAIN_LinkSpeed_done_req;
+        {8'hBA, 8'h19}: msg_num = MBTRAIN_LinkSpeed_done_resp;
+
+        {8'h01, 8'h01}: msg_num = LinkMgmt_RDI_Active_req;
+        {8'h02, 8'h01}: msg_num = LinkMgmt_RDI_Active_resp;
+
         default:        msg_num = CODEX_ERROR;
     endcase
 endfunction
