@@ -3,11 +3,49 @@
 
 // Code and decode functions for SB messages
 // Expand in order to add more messages along with the function to translate (just below)
-typedef enum logic [2:0]{
+typedef enum logic [5:0]{
     CODEX_ERROR,
     SBINIT_out_of_reset,
     SBINIT_done_req,
-    SBINIT_done_resp
+    SBINIT_done_resp,
+
+    MBINIT_PARAM_config_req,
+    MBINIT_PARAM_config_resp,
+    MBINIT_CAL_done_req,
+    MBINIT_CAL_done_resp,
+    MBINIT_RepairCLK_done_req,
+    MBINIT_RepairCLK_done_resp,
+    MBINIT_RepairVAL_done_req,
+    MBINIT_RepairVAL_done_resp,
+    MBINIT_ReversalIMB_done_req,
+    MBINIT_ReversalIMB_done_resp,
+    MBINIT_RepairMB_end_req,
+    MBINIT_RepairMB_end_resp,
+
+    MBTRAIN_VALVREF_end_req,
+    MBTRAIN_VALVREF_end_resp,
+    MBTRAIN_DATAVREF_end_req,
+    MBTRAIN_DATAVREF_end_resp,
+    MBTRAIN_SpeedIDLE_done_req,
+    MBTRAIN_SpeedIDLE_done_resp,
+    MBTRAIN_TXSelfCal_done_req,
+    MBTRAIN_TXSelfCal_done_resp,
+    MBTRAIN_RXCLKCal_done_req,
+    MBTRAIN_RXCLKCal_done_resp,
+    MBTRAIN_ValTrainCenter_done_req,
+    MBTRAIN_ValTrainCenter_done_resp,
+    MBTRAIN_DataTrainCenter1_end_req,
+    MBTRAIN_DataTrainCenter1_end_resp,
+    MBTRAIN_DataTrainVref_end_req,
+    MBTRAIN_DataTrainVref_end_resp,
+    MBTRAIN_RXDeskew_end_req,
+    MBTRAIN_RXDeskew_end_resp,
+    MBTRAIN_DataTrainCenter2_end_req,
+    MBTRAIN_DataTrainCenter2_end_resp,
+    MBTRAIN_LinkSpeed_done_req,
+    MBTRAIN_LinkSpeed_done_resp
+
+    // Add more message numbers as needed
 } SB_msgNum_t;
 
 function automatic void get_SB_msg_code(
@@ -16,9 +54,47 @@ function automatic void get_SB_msg_code(
     output logic [7:0] msg_subcode
 );
     unique case (msg_num)
-        SBINIT_out_of_reset:   begin msg_code = 8'h91; msg_subcode = 8'h00; end
-        SBINIT_done_req:       begin msg_code = 8'h95; msg_subcode = 8'h01; end
-        SBINIT_done_resp:      begin msg_code = 8'h9A; msg_subcode = 8'h01; end
+        SBINIT_out_of_reset:              begin msg_code = 8'h91; msg_subcode = 8'h00; end
+        SBINIT_done_req:                  begin msg_code = 8'h95; msg_subcode = 8'h01; end
+        SBINIT_done_resp:                 begin msg_code = 8'h9A; msg_subcode = 8'h01; end
+
+        MBINIT_PARAM_config_req:          begin msg_code = 8'hA5; msg_subcode = 8'h00; end
+        MBINIT_PARAM_config_resp:         begin msg_code = 8'hAA; msg_subcode = 8'h00; end
+        MBINIT_CAL_done_req:              begin msg_code = 8'hA5; msg_subcode = 8'h02; end
+        MBINIT_CAL_done_resp:             begin msg_code = 8'hAA; msg_subcode = 8'h02; end
+        MBINIT_RepairCLK_done_req:        begin msg_code = 8'hA5; msg_subcode = 8'h08; end
+        MBINIT_RepairCLK_done_resp:       begin msg_code = 8'hAA; msg_subcode = 8'h08; end
+        MBINIT_RepairVAL_done_req:        begin msg_code = 8'hA5; msg_subcode = 8'h0C; end
+        MBINIT_RepairVAL_done_resp:       begin msg_code = 8'hAA; msg_subcode = 8'h0C; end
+        MBINIT_ReversalIMB_done_req:      begin msg_code = 8'hA5; msg_subcode = 8'h10; end
+        MBINIT_ReversalIMB_done_resp:     begin msg_code = 8'hAA; msg_subcode = 8'h10; end
+        MBINIT_RepairMB_end_req:          begin msg_code = 8'hA5; msg_subcode = 8'h13; end
+        MBINIT_RepairMB_end_resp:         begin msg_code = 8'hAA; msg_subcode = 8'h13; end
+
+        MBTRAIN_VALVREF_end_req:          begin msg_code = 8'hB5; msg_subcode = 8'h01; end
+        MBTRAIN_VALVREF_end_resp:         begin msg_code = 8'hBA; msg_subcode = 8'h01; end
+        MBTRAIN_DATAVREF_end_req:         begin msg_code = 8'hB5; msg_subcode = 8'h03; end
+        MBTRAIN_DATAVREF_end_resp:        begin msg_code = 8'hBA; msg_subcode = 8'h03; end
+        MBTRAIN_SpeedIDLE_done_req:       begin msg_code = 8'hB5; msg_subcode = 8'h04; end
+        MBTRAIN_SpeedIDLE_done_resp:      begin msg_code = 8'hBA; msg_subcode = 8'h04; end
+        MBTRAIN_TXSelfCal_done_req:       begin msg_code = 8'hB5; msg_subcode = 8'h05; end
+        MBTRAIN_TXSelfCal_done_resp:      begin msg_code = 8'hBA; msg_subcode = 8'h05; end
+        MBTRAIN_RXCLKCal_done_req:        begin msg_code = 8'hB5; msg_subcode = 8'h07; end
+        MBTRAIN_RXCLKCal_done_resp:       begin msg_code = 8'hBA; msg_subcode = 8'h07; end
+        MBTRAIN_ValTrainCenter_done_req:  begin msg_code = 8'hB5; msg_subcode = 8'h0B; end
+        MBTRAIN_ValTrainCenter_done_resp: begin msg_code = 8'hBA; msg_subcode = 8'h0B; end
+        MBTRAIN_DataTrainCenter1_end_req: begin msg_code = 8'hB5; msg_subcode = 8'h0D; end
+        MBTRAIN_DataTrainCenter1_end_resp:begin msg_code = 8'hBA; msg_subcode = 8'h0D; end
+        MBTRAIN_DataTrainVref_end_req:    begin msg_code = 8'hB5; msg_subcode = 8'h10; end
+        MBTRAIN_DataTrainVref_end_resp:   begin msg_code = 8'hBA; msg_subcode = 8'h10; end
+        MBTRAIN_RXDeskew_end_req:         begin msg_code = 8'hB5; msg_subcode = 8'h12; end
+        MBTRAIN_RXDeskew_end_resp:        begin msg_code = 8'hBA; msg_subcode = 8'h12; end
+        MBTRAIN_DataTrainCenter2_end_req: begin msg_code = 8'hB5; msg_subcode = 8'h14; end
+        MBTRAIN_DataTrainCenter2_end_resp:begin msg_code = 8'hBA; msg_subcode = 8'h14; end
+        MBTRAIN_LinkSpeed_done_req:       begin msg_code = 8'hB5; msg_subcode = 8'h19; end
+        MBTRAIN_LinkSpeed_done_resp:      begin msg_code = 8'hBA; msg_subcode = 8'h19; end
+        
+        // Add more message codes and subcodes as needed
         default:               begin msg_code = 8'hFF; msg_subcode = 8'hFF; end
     endcase
 endfunction
