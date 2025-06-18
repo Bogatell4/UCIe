@@ -6,5 +6,12 @@ Aiming for standard package 16 lanes with the following functionalities (for now
 - :green_circle: Sideband Communication
 - :yellow_circle: Link state management
     - :green_circle: Transition through all states with link partner to ACTIVE
-    - :yellow_circle: Empty shell for each LT state, able to add extra functionality in the future
+    - :green_circle: Empty shell for each LT state, able to add extra functionality in the future
     - :red_circle: Link parameter negotiation
+
+
+The following diagrams show the structure of the implementation done in this repo:
+
+![UCIe MB Implementation Diagram](MB_implementation_diagram.jpg)
+![UCIe SB Implementation Diagram](SB_implementation_diagram.jpg)
+![UCIe LTSM Implementation Diagram](LTSM_implementation_diagram.jpg)
