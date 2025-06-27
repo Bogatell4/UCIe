@@ -375,6 +375,7 @@ MBINIT mbinit_inst (
     .SB_RX_dataBus_i(SB_dataBus_RX),
     .SB_RX_msg_req_o(SB_RX_msgReq_MBINIT),
     .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+    .SB_RX_msg_available_i(SB_msg_available_i_w),
 
     .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
     .reset_SBmessage_retry_timeout(reset_message_retry_timeout_MBINIT),
@@ -411,6 +412,7 @@ MBTRAIN mbtrain_inst (
     .SB_RX_dataBus_i(SB_dataBus_RX),
     .SB_RX_msg_req_o(SB_RX_msgReq_MBTRAIN),
     .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+    .SB_RX_msg_available_i(SB_msg_available_i_w),
 
     .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
     .reset_SBmessage_retry_timeout(reset_message_retry_timeout_MBTRAIN),
@@ -447,6 +449,7 @@ LINKINIT linkinit_inst (
     .SB_RX_dataBus_i(SB_dataBus_RX),
     .SB_RX_msg_req_o(SB_RX_msgReq_LINKINIT),
     .SB_RX_msg_valid_i(SB_msg_valid_i_w),
+    .SB_RX_msg_available_i(SB_msg_available_i_w),
 
     .SBmessage_retry_timeout_flag(message_retry_timeout_flag),
     .reset_SBmessage_retry_timeout(reset_message_retry_timeout_LINKINIT),
@@ -455,6 +458,8 @@ LINKINIT linkinit_inst (
 );
 
 // Instantiate ACTIVE
+// This module is used to handle the active state of the link with all MB communication
+// Empty for now,
 ACTIVE active_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
@@ -490,6 +495,8 @@ ACTIVE active_inst (
     .reset_state_timeout_counter_o(reset_timeout_counter_ACTIVE)
 );
 
+// Instantiate TRAINERROR
+// This module is used to handle errors during training, empty for now
 TRAINERROR trainerror_inst (
     .clk_100MHz(clk_100MHz),
     .clk_800MHz(clk_800MHz),
@@ -531,11 +538,9 @@ always_comb begin
         end
 
         SBINIT: begin
-
         end
 
         MBINIT: begin
-
         end
 
         MBTRAIN: begin 
@@ -548,7 +553,6 @@ always_comb begin
         end
 
         TRAINERROR: begin
-
         end
 
         L1_L2: begin
@@ -556,12 +560,10 @@ always_comb begin
 
         default: begin
         end
-
     endcase
 end
 
 // Next state Combinational Logic
-// TODO: separately reset each state when entering. Create separate reset signals.
 always_comb begin
     LT_NEXT_state = LT_Current_state;
     reset_stateChange_timeout_counter = 1'b0;
@@ -569,49 +571,59 @@ always_comb begin
         LT_NEXT_state = TRAINERROR;
     end else begin
         unique case (LT_Current_state)
+
             RESET: begin
                 if (enable_i && start_LT_i && counter_reset_flag) begin
                     LT_NEXT_state = SBINIT;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             SBINIT: begin
                 if (SBINIT_done) begin
                     LT_NEXT_state = MBINIT;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             MBINIT: begin
                 if (MBINIT_done) begin
                     LT_NEXT_state = MBTRAIN;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             MBTRAIN: begin 
                 if (MBTRAIN_done) begin
                     LT_NEXT_state = LINKINIT;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             LINKINIT: begin
                 if (LINKINIT_done) begin
                     LT_NEXT_state = ACTIVE;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             ACTIVE: begin
             end
+
             TRAINERROR: begin
                 if (TRAINERROR_done) begin
                     LT_NEXT_state = RESET;
                     reset_stateChange_timeout_counter = 1'b1;
                 end
             end
+
             L1_L2: begin
             end
+
             default: begin
                 LT_NEXT_state = RESET;
             end
+
         endcase
     end
 end

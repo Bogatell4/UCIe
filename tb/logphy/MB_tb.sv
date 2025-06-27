@@ -95,11 +95,7 @@ module MB_tb;
         for (int f = 0; f < 3; f++) begin
             for (int i = 0; i < 64; i++) begin 
                 if (i < flit_str[f].len())
-                    //if (f==0) begin
-                    //    ascii_flit[f][i] = 8'hFF;
-                    //end else begin
-                        ascii_flit[f][i] = flit_str[f].getc(i);
-                    //end
+                    ascii_flit[f][i] = flit_str[f].getc(i);
                 else
                     ascii_flit[f][i] = " ";
             end
@@ -130,7 +126,6 @@ module MB_tb;
         reset = 1;
         #1000 reset = 0;
 
-
         //this valid/enable signaling needs to be done with an asyncronous reset register with the ack
         for (int flitNum = 0; flitNum < 3; flitNum++) begin
             @(posedge clk_100MHz);
@@ -141,11 +136,9 @@ module MB_tb;
             wait (valid_ack);
             valid_i = 0;
         end
-        
 
         #200000;
         $finish;
     end
-
 
 endmodule

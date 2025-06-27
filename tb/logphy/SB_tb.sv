@@ -84,7 +84,7 @@ module SB_tb;
 
     // Prepare test messages and data
     initial begin
-        // Example 1: Message without data (was Example 2)
+        // Example 1: Message without data
         test_msgs[0] = reset_SB_msg();
         test_msgs[0].opcode = Message_without_Data;
         test_msgs[0].msg_num = SBINIT_done_req;
@@ -93,7 +93,7 @@ module SB_tb;
         test_msgs[0].msg_info = 16'hBEEF;
         test_data[0] = 64'd0; // Not used for this message
 
-        // Example 2: Another message without data (new test)
+        // Example 2: Another message without data
         test_msgs[1] = reset_SB_msg();
         test_msgs[1].opcode = Message_without_Data;
         test_msgs[1].msg_num = SBINIT_out_of_reset;
@@ -102,7 +102,7 @@ module SB_tb;
         test_msgs[1].msg_info = 16'h1234;
         test_data[1] = 64'd0; // Not used for this message
 
-        // Example 3: 32b Register Read (was Example 1)
+        // Example 3: 32b Register Read
         test_msgs[2] = reset_SB_msg();
         test_msgs[2].opcode = MemRead_32b;
         test_msgs[2].srcid = Stack0_Protocol;
@@ -113,7 +113,7 @@ module SB_tb;
         test_msgs[2].cr = 1'b1;
         test_data[2] = 64'hAABBCCDD11223344;
 
-        // Example 4: 64b Register Write (unchanged)
+        // Example 4: 64b Register Write
         test_msgs[3] = reset_SB_msg();
         test_msgs[3].opcode = MemWrite_64b;
         test_msgs[3].srcid = D2D_Adapter;

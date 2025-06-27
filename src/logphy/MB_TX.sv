@@ -1,5 +1,5 @@
 // Current implementation supports UCIe standard package 16 line data bit on MainBand. 64B flit size
-//TODO: ADD Track line? not sure functionality
+// No track line defined or used in this file
 
 module MB_TX #(
     parameter flit_buffer_size = 4 // Number of flit buffers, must be a power of 2 and not 1
@@ -124,7 +124,6 @@ always_ff @(negedge clk or reset) begin
             2'b11: ctr_odd <= 2'b00;
         endcase
 end
-
 
 // Data output multiplexer and serialization assignment
 // This assigns the data output based on the read_index and flit_fragment_index and ctr_sum

@@ -1,0 +1,38 @@
+[*]
+[*] GTKWave Analyzer v3.3.116 (w)1999-2023 BSI
+[*] Tue Jun 17 15:57:11 2025
+[*]
+[dumpfile] "/home/sergibogatell/.teroshdl/LTSM_tb.vcd"
+[dumpfile_mtime] "Tue Jun 17 15:49:30 2025"
+[dumpfile_size] 1349938
+[savefile] "/home/sergibogatell/repos/UCIe/tb/Sim_results/LTSB_tb.gtkw"
+[timestart] 0
+[size] 1860 927
+[pos] -1 -1
+*-21.366053 140000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.LTSM_tb.
+[sst_width] 322
+[signals_width] 385
+[sst_expanded] 1
+[sst_vpaned_height] 270
+@28
+TOP.LTSM_tb.clk_100MHz
+TOP.LTSM_tb.clk_800MHz
+TOP.LTSM_tb.dut0.LT_Current_state[2:0]
+TOP.LTSM_tb.dut1.LT_Current_state[2:0]
+TOP.LTSM_tb.dut0.enable_SBINIT
+TOP.LTSM_tb.dut0.SBINIT_done
+TOP.LTSM_tb.dut0.enable_MBINIT
+TOP.LTSM_tb.dut0.MBINIT_done
+TOP.LTSM_tb.dut0.enable_MBTRAIN
+TOP.LTSM_tb.dut0.MBTRAIN_done
+TOP.LTSM_tb.dut0.enable_LINKINIT
+TOP.LTSM_tb.dut0.LINKINIT_done
+TOP.LTSM_tb.dut0.enable_ACTIVE
+TOP.LTSM_tb.dut0.SB_clkPin_RX_i
+TOP.LTSM_tb.dut0.SB_clkPin_TX_o
+TOP.LTSM_tb.dut0.SB_dataPin_TX_o
+TOP.LTSM_tb.dut0.SB_dataPin_RX_i
+[pattern_trace] 1
+[pattern_trace] 0

@@ -1,5 +1,5 @@
 // Current implementation supports UCIe standard package 16 line data bit on MainBand. 64B flit size
-// TODO: ADD Track line? not sure functionality
+// No track line defined or used in this file
 
 module MB_RX #(
     parameter flit_buffer_size = 4 // Number of flit buffers, cant be 1 and needs to be a power of 2
@@ -184,6 +184,5 @@ always_ff @(posedge periph_clkPins_i[1] or reset) begin
         endcase
     end
 end
-
 
 endmodule

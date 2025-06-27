@@ -20,8 +20,6 @@ module SB_TX #(
     output clkPin_o
 );
 
-
-
     // Sideband msg buffer
     reg [63:0] buffer [fast_buffer_size-1:0];
     reg [$clog2(fast_buffer_size)-1:0] write_index;
@@ -72,7 +70,6 @@ module SB_TX #(
         end
     end
 
-
     always_comb begin
         encode_SB_msg(SB_msg_i, encoded_msg_w, expect_32b_data_w, expect_64b_data_w);
     end   
@@ -80,7 +77,6 @@ module SB_TX #(
     assign ShiftReg_data_w = (expect_32b_data_r) ? {32'd0, Stored_data_r[31:0]} :
                              (expect_64b_data_r) ? Stored_data_r :
                              encoded_msg_w;
-
 
     logic delay1;
     // async reset of the ShiftReg_data flag
@@ -212,4 +208,5 @@ module SB_TX #(
             endcase
         end
     end
+    
 endmodule
